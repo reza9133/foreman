@@ -1,0 +1,16 @@
+{
+  "name": "Foreman — Agent-to-Agent Escrow & Adjudication",
+  "short_name": "Foreman",
+  "description": "Escrow and AI-adjudicated deliverable verification for agent-to-agent work orders, on GenLayer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#D89B4A",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
