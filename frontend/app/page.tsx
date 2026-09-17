@@ -5,6 +5,7 @@ import { ShieldCheck, Scale, Zap, ArrowRight, Gavel } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { OrderCard } from "@/components/OrderCard";
 import { Button } from "@/components/ui/button";
+import { SpinnerBlock } from "@/components/ui/spinner";
 import { useOpenOrders, useAllOrders } from "@/lib/hooks/useForeman";
 
 export default function HomePage() {
@@ -59,15 +60,15 @@ export default function HomePage() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-14 animate-slide-up">
-            <div className="brand-card p-5 text-center">
+            <div className="brand-card brand-card-hover p-5 text-center">
               <p className="text-3xl font-bold text-accent">{total}</p>
               <p className="text-sm text-muted-foreground mt-1">Work orders opened</p>
             </div>
-            <div className="brand-card p-5 text-center">
+            <div className="brand-card brand-card-hover p-5 text-center">
               <p className="text-3xl font-bold text-accent">{adjudicated}</p>
               <p className="text-sm text-muted-foreground mt-1">Adjudicated by consensus</p>
             </div>
-            <div className="brand-card p-5 text-center">
+            <div className="brand-card brand-card-hover p-5 text-center">
               <p className="text-3xl font-bold text-accent">
                 {acceptedRate === null ? "—" : `${acceptedRate}%`}
               </p>
@@ -129,7 +130,7 @@ export default function HomePage() {
             </div>
 
             {isLoading ? (
-              <div className="brand-card p-10 text-center text-muted-foreground">Loading orders…</div>
+              <SpinnerBlock label="Loading orders…" />
             ) : !openOrders || openOrders.length === 0 ? (
               <div className="brand-card p-10 text-center">
                 <p className="text-muted-foreground">

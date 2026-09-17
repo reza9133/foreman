@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { getContractAddress } from "@/lib/genlayer/client";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { useOrder, useInvalidateOrdersData } from "@/lib/hooks/useForeman";
+import { Spinner } from "@/components/ui/spinner";
 import { formatGen, formatDeadline } from "@/lib/utils/gen";
 import { error, success } from "@/lib/utils/toast";
 
@@ -135,8 +136,8 @@ function OrderDetailContent() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow pt-24 pb-16 px-4 flex items-center justify-center text-muted-foreground">
-          Loading order…
+        <main className="flex-grow pt-24 pb-16 px-4 flex items-center justify-center">
+          <Spinner size="lg" label="Loading order…" />
         </main>
       </div>
     );
@@ -372,8 +373,8 @@ export default function OrderDetailPage() {
       fallback={
         <div className="min-h-screen flex flex-col">
           <Navbar />
-          <main className="flex-grow pt-24 pb-16 px-4 flex items-center justify-center text-muted-foreground">
-            Loading order…
+          <main className="flex-grow pt-24 pb-16 px-4 flex items-center justify-center">
+            <Spinner size="lg" label="Loading order…" />
           </main>
         </div>
       }

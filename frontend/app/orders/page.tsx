@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { OrderCard } from "@/components/OrderCard";
 import { Button } from "@/components/ui/button";
+import { SpinnerBlock } from "@/components/ui/spinner";
 import { useAllOrders, useOrdersByClient, useOrdersByProvider } from "@/lib/hooks/useForeman";
 import { useWallet } from "@/lib/genlayer/wallet";
 import type { Order } from "@/lib/contracts/types";
@@ -52,7 +53,7 @@ export default function OrdersPage() {
           </div>
 
           {loadingAll ? (
-            <div className="brand-card p-10 text-center text-muted-foreground">Loading orders…</div>
+            <SpinnerBlock label="Loading orders…" />
           ) : orders.length === 0 ? (
             <div className="brand-card p-10 text-center text-muted-foreground">
               {tab === "mine"
