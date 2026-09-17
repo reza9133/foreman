@@ -300,7 +300,10 @@ class Foreman(gl.contract.Contract):
             # (independent validators' browser instances can time out or
             # diverge in ways a plain GET never does). Use render() only if
             # a deliverable genuinely needs JS execution or DOM rendering.
-            response = gl.nondet.web.get(deliverable_url)
+            try:
+                response = gl.nondet.web.get(deliverable_url)
+            except Exception as e:
+                raise gl.vm.UserError(f"Could not fetch deliverable_url: {e}")
             evidence = response.body.decode("utf-8", errors="replace")
 
             prompt = f"""
@@ -337,8 +340,20 @@ Decide:
 Respond with ONLY this JSON shape, no other text:
 {{"payout_percent": int, "reasoning": "...", "red_flags": ["..."]}}
 """
-            result = _parse_llm_json(gl.nondet.exec_prompt(prompt, response_format="json"))
-            payout_percent = max(0, min(100, int(result.get("payout_percent", 0))))
+            try:
+                raw = gl.nondet.exec_prompt(prompt, response_format="json")
+                result = _parse_llm_json(raw)
+            except Exception as e:
+                raise gl.vm.UserError(f"LLM adjudication response was unparseable: {e}")
+
+            if "payout_percent" not in result:
+                raise gl.vm.UserError(
+                    f"LLM response missing payout_percent: {result!r}"
+                )
+            try:
+                payout_percent = max(0, min(100, int(result.get("payout_percent", 0))))
+            except (TypeError, ValueError) as e:
+                raise gl.vm.UserError(f"LLM returned a non-numeric payout_percent: {e}")
             return {
                 # Derived from payout_percent rather than asked of the LLM
                 # as a second, independent field. Two separately-sampled
