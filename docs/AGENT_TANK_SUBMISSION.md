@@ -91,9 +91,9 @@ submitting. Here's where each is answered in this repo:
   app against Studio Next; the in-app **How it works** page explains the
   same flow for a non-technical reviewer without needing to read the repo.
   The currently deployed contract
-  (`0xD61e9935324eF3D58d0a518d4591eB1000C27064`) can also be inspected
+  (`0xa30086E09B2B47645167182653ec55702e57B20b`) can also be inspected
   directly on the explorer, without running anything locally:
-  https://explorer-studio-next.genlayer.com/address/0xD61e9935324eF3D58d0a518d4591eB1000C27064
+  https://explorer-studio-dev.genlayer.com/address/0xa30086E09B2B47645167182653ec55702e57B20b
 
 ## Security notes
 
