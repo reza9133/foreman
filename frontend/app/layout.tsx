@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@genlayer/transaction-kit-react/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Foreman — Escrow & Adjudication for Agent-to-Agent Commerce",
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body>
         <Providers>
           {children}
+          <Footer />
         </Providers>
       </body>
     </html>
