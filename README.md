@@ -85,14 +85,14 @@ re-derives its own verdict instead of trusting the leader's output).
   when a second opinion falls outside tolerance (proof the consensus logic
   isn't a rubber stamp).
 - **Integration tests** (`tests/integration/`) — full end-to-end runs
-  against a live network, targeting Studio Dev by default.
+  against a live network, targeting Studio Next by default.
 - **Contract linting** via `genvm-lint`.
 - A Next.js 16 frontend (TypeScript, TanStack Query, Radix UI,
   `@genlayer/transaction-kit-react`) with a live order book, a create-order
   flow, and a per-order action hub (claim / submit / appeal / expire) that
   adapts to the connected wallet's role.
 - Deployment script and network config already pointed at **GenLayer Studio
-  Dev** (Consensus v0.6, chain id `61997`), as required for this hackathon.
+  Next** (Consensus v0.6, chain id `61997`), as required for this hackathon.
 
 ## Requirements
 
@@ -130,21 +130,24 @@ and, using the `direct_vm.run_validator()` cheatcode, proves that a
 validator whose independent re-adjudication disagrees beyond tolerance
 actually returns `False` rather than rubber-stamping the leader.
 
-### 4. Deploy to Studio Dev
+### 4. Deploy to Studio Next
 
-The Agent Tank Hackathon requires deployment on **Studio Dev** (Consensus
-v0.6, chain id `61997`, RPC `https://studio-dev.genlayer.com/api`). The CLI
-ships `studio-dev` as a built-in network, so there is no "custom" entry to
-fill in:
+The Agent Tank Hackathon requires deployment on **Studio Next** (Consensus
+v0.6, including fees; chain id `61997`, RPC
+`https://studio-next.genlayer.com/api`). If the CLI does not yet list
+`studio-next` as a built-in network, pick "custom" and enter the RPC URL and
+chain id above:
 
 ```shell
-genlayer network set studio-dev   # or plain `genlayer network` and pick it
-genlayer deploy                   # runs deploy/deployScript.ts
+genlayer network   # interactive — pick "custom" if Studio Next isn't listed
+                    # by name yet, and enter the RPC URL and chain id above
+genlayer deploy     # runs deploy/deployScript.ts
 ```
 
-> `studio-next.genlayer.com` is the browser-facing Studio UI for this same
-> chain, not an RPC endpoint. Use `studio-dev.genlayer.com/api` everywhere a
-> URL is asked for.
+> `studio-dev.genlayer.com` was the previous RPC host for this hackathon and
+> is no longer the required target. Use `studio-next.genlayer.com/api`
+> everywhere a URL is asked for; the explorer for this chain is at
+> `https://explorer-studio-dev.genlayer.com/`.
 
 Save the printed contract address. See the
 [GenLayer CLI reference](https://docs.genlayer.com/api-references/genlayer-cli)
@@ -168,7 +171,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, connect a wallet on Studio Dev, and open a
+Open http://localhost:3000, connect a wallet on Studio Next, and open a
 work order — the app will prompt MetaMask to add/switch to the network
 automatically if it isn't already configured.
 
@@ -179,11 +182,13 @@ The frontend uses published `@genlayer/transaction-kit` and
 `2.0.0-rc.1`. Run `npm ci` from the repository root to install the locked
 releases.
 
-The default network is Studio Dev (Consensus v0.6) at
-`https://studio-dev.genlayer.com/api` (chain ID `61997`), read straight off
-genlayer-js's own `studioDevnet` preset. Copy `frontend/.env.example`; change
-the RPC URL and chain ID together when targeting another deployment. Wallet, SDK, and Transaction Kit share this
-configuration.
+The default network is Studio Next (Consensus v0.6) at
+`https://studio-next.genlayer.com/api` (chain ID `61997`). The installed SDK's
+`studioDevnet` preset still points at the older Studio Dev host, so
+`frontend/lib/genlayer/network.ts` overrides just the RPC URL and chain name
+while keeping the rest of that preset. Copy `frontend/.env.example`; change
+the RPC URL and chain ID together when targeting another deployment. Wallet,
+SDK, and Transaction Kit share this configuration.
 
 Transaction Kit falls back to live network fee defaults when no developer
 profile is supplied, which is what this repo ships with. If you want faster,
@@ -214,7 +219,7 @@ frontend/                  # Next.js 16 app (TypeScript, TanStack Query, Radix U
   lib/
     contracts/Foreman.ts    # read wrapper
     hooks/useForeman.ts     # TanStack Query hooks
-    genlayer/                # wallet, network, transaction-kit wiring (Studio Dev by default)
+    genlayer/                # wallet, network, transaction-kit wiring (Studio Next by default)
 deploy/
   deployScript.ts           # deploys contracts/foreman.py
 docs/
@@ -234,7 +239,7 @@ pyproject.toml
 
 **Recommended workflow:** lint after every contract change, run direct
 tests constantly during development, run integration tests before (and
-after) deploying to confirm real consensus behavior on Studio Dev.
+after) deploying to confirm real consensus behavior on Studio Next.
 
 ## Community
 

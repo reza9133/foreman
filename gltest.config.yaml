@@ -1,6 +1,9 @@
 networks:
-  # Studio Dev (Consensus v0.6) is this project's deployment target, so it is
-  # also the default for `gltest tests/integration/`.
+  # Studio Next (Consensus v0.6, including fees) is this project's deployment
+  # target, so it is also the default for `gltest tests/integration/`. The
+  # network entry below keeps its old `studio_devnet` key for backward
+  # compatibility with existing test invocations, but its RPC URL now points
+  # at Studio Next.
   default: studio_devnet
 
   localnet:
@@ -10,11 +13,12 @@ networks:
   studionet:
     url: "https://studio.genlayer.com/api"
 
-  # GenLayer Studio Dev (Consensus v0.6), chain id 61997. This is the canonical
-  # RPC host; studio-next.genlayer.com is the browser Studio UI for the same
-  # chain and is NOT an RPC endpoint.
+  # GenLayer Studio Next (Consensus v0.6), chain id 61997 — the network
+  # required for the Agent Tank Hackathon. `studio-dev.genlayer.com` was the
+  # previous RPC host for this same chain and is no longer the required
+  # target. Explorer: https://explorer-studio-dev.genlayer.com/.
   studio_devnet:
-    url: "https://studio-dev.genlayer.com/api"
+    url: "https://studio-next.genlayer.com/api"
 
 paths:
   contracts: "contracts"

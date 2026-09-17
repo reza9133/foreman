@@ -13,7 +13,7 @@ pytest tests/direct/ -v                        # Direct mode tests (fast, no Stu
 gltest tests/integration/ -v -s                # Integration tests (studio_devnet by default)
 
 # Deployment
-genlayer network set studio-dev                # Studio Dev, Consensus v0.6, chain 61997
+genlayer network                               # pick "custom" -> Studio Next, Consensus v0.6, chain 61997
 genlayer deploy                                # Deploy contracts
 
 # Frontend
@@ -36,18 +36,19 @@ deploy/             # TypeScript deployment scripts
 `tailwind.config.ts`), TanStack Query, `genlayer-js` + `@genlayer/transaction-kit`,
 and direct MetaMask (EIP-1193) wiring in `lib/genlayer/client.ts`.
 
-**Network**: Studio Dev (Consensus v0.6), chain id `61997`, RPC
-`https://studio-dev.genlayer.com/api`. The frontend reads this off
-genlayer-js's `studioDevnet` preset in `lib/genlayer/network.ts`; `gltest`
-reads it from `gltest.config.yaml`. `studio-next.genlayer.com` is the browser
-Studio UI for the same chain and is **not** an RPC endpoint.
+**Network**: Studio Next (Consensus v0.6, including fees), chain id `61997`,
+RPC `https://studio-next.genlayer.com/api`. `lib/genlayer/network.ts`
+overrides genlayer-js's `studioDevnet` preset (which still points at the
+older `studio-dev.genlayer.com` host) with this RPC URL; `gltest` reads its
+own value from `gltest.config.yaml`. Explorer:
+`https://explorer-studio-dev.genlayer.com/`.
 
 ## Development Workflow
 
 1. Write/modify contract in `contracts/`
 2. Lint: `genvm-lint check contracts/your_contract.py`
 3. Test direct: `pytest tests/direct/ -v`
-4. Deploy: `genlayer network set studio-dev && genlayer deploy`
+4. Deploy: `genlayer network` (pick/enter Studio Next) `&& genlayer deploy`
 5. Test integration: `gltest tests/integration/ -v -s`
 6. Run frontend: `cd frontend && npm run dev`
 

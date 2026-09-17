@@ -90,6 +90,10 @@ submitting. Here's where each is answered in this repo:
   Yes — root README "Quick start" walks from a clean checkout to a running
   app against Studio Next; the in-app **How it works** page explains the
   same flow for a non-technical reviewer without needing to read the repo.
+  The currently deployed contract
+  (`0x1F4C583950794AD9022e47Fa40191949f42a5f2D`) can also be inspected
+  directly on the explorer, without running anything locally:
+  https://explorer-studio-dev.genlayer.com/address/0x1F4C583950794AD9022e47Fa40191949f42a5f2D
 
 ## Security notes
 
