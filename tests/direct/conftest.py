@@ -5,12 +5,14 @@ import json
 
 def to_hex(addr):
     """Convert a direct-mode test address into the hex string the contract
-    stores (str(gl.Address(...)))."""
+    stores. The contract normalizes every address through `_addr()` before
+    storing or comparing it, so this matches that — lowercase, not the
+    EIP-55 checksummed form `Address.as_hex` returns."""
     if hasattr(addr, "as_hex"):
-        return addr.as_hex
+        return addr.as_hex.lower()
     from genlayer.types import Address
 
-    return str(Address(addr))
+    return str(Address(addr)).lower()
 
 
 def mock_json_llm(vm, prompt_pattern, response: dict):
