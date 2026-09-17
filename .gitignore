@@ -1,0 +1,31 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+node_modules
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+/context
+/frontend/.next
+/frontend/next-env.d.ts
+/frontend/bun.lock
+/frontend/package-lock.json
+*.compiled.js
+
+# The root lockfile IS committed on purpose: CI runs `npm ci` (which requires
+# it) and frontend/__tests__/release-dependencies.test.ts asserts on the pinned
+# GenLayer RC versions recorded in it. Only the nested frontend lockfile, which
+# npm workspaces makes redundant, is ignored (see /frontend/package-lock.json
+# above).
+
+*.tsbuildinfo

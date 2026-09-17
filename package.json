@@ -1,0 +1,20 @@
+{
+  "name": "foreman",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint",
+    "test": "python3 -m pytest tests/direct/ -v",
+    "test:integration": "gltest tests/integration/ -v -s --network studio_devnet",
+    "deploy": "genlayer deploy"
+  },
+  "devDependencies": {
+    "genlayer-js": "2.0.0-rc.1"
+  }
+}

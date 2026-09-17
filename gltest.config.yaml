@@ -1,0 +1,22 @@
+networks:
+  # Studio Dev (Consensus v0.6) is this project's deployment target, so it is
+  # also the default for `gltest tests/integration/`.
+  default: studio_devnet
+
+  localnet:
+    url: "http://127.0.0.1:4000/api"
+
+  # Stable Studio — chain 61999. Kept selectable, not used by default.
+  studionet:
+    url: "https://studio.genlayer.com/api"
+
+  # GenLayer Studio Dev (Consensus v0.6), chain id 61997. This is the canonical
+  # RPC host; studio-next.genlayer.com is the browser Studio UI for the same
+  # chain and is NOT an RPC endpoint.
+  studio_devnet:
+    url: "https://studio-dev.genlayer.com/api"
+
+paths:
+  contracts: "contracts"
+
+environment: .env
