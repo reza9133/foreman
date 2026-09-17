@@ -85,7 +85,7 @@ export function Navbar() {
               <Link href="/" className="flex items-center gap-3">
                 <LogoMark size="md" className="flex md:hidden" />
                 <Logo size="md" className="hidden md:flex" />
-                <span className="text-lg md:text-xl font-bold ml-2">Foreman</span>
+                <span className="text-lg font-bold ml-2 md:hidden">Foreman</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6 text-sm">
