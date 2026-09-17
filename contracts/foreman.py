@@ -61,6 +61,44 @@ STATUS_CANCELLED = "cancelled"
 STATUS_EXPIRED = "expired"
 
 
+def _addr(value) -> str:
+    """Normalize any address-like value (an `Address` object or a raw hex
+    string) to one canonical lowercase form. Addresses stored on an order
+    (e.g. "client", "provider") and addresses freshly read from
+    `gl.message.sender_address` or passed in by a caller can otherwise
+    differ only in checksum casing and fail a plain `==` comparison even
+    though they refer to the same account. Every address that is stored,
+    compared, or accepted as a view/write argument goes through this
+    function first."""
+    return str(value).lower()
+
+
+def _parse_llm_json(raw) -> dict:
+    """`gl.nondet.exec_prompt(..., response_format="json")` guarantees the
+    model was *asked* for JSON, not that the SDK necessarily hands back an
+    already-parsed dict — depending on the runtime it can return a plain
+    string, and even then models sometimes wrap it in a ```json fence
+    despite instructions not to. Handle both: pass a dict straight through,
+    otherwise strip any markdown fencing/prose around the object and parse
+    it. Calling `.get()` on an unparsed string is what crashes the leader
+    with `AttributeError: 'str' object has no attribute 'get'`."""
+    if isinstance(raw, dict):
+        return raw
+    text = str(raw).strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text[:4].lower() == "json":
+            text = text[4:]
+    first = text.find("{")
+    last = text.rfind("}")
+    if first != -1 and last != -1:
+        text = text[first : last + 1]
+    parsed = json.loads(text)
+    if not isinstance(parsed, dict):
+        raise gl.vm.UserError("LLM response was not a JSON object")
+    return parsed
+
+
 class Foreman(gl.contract.Contract):
     # order_id -> JSON blob (see _new_order for the schema). Every complex
     # record in this contract is stored as a JSON string rather than a
@@ -149,7 +187,7 @@ class Foreman(gl.contract.Contract):
 
         order = {
             "id": order_id,
-            "client": str(gl.message.sender_address),
+            "client": _addr(gl.message.sender_address),
             "provider": "",
             "title": title,
             "spec": spec,
@@ -182,7 +220,7 @@ class Foreman(gl.contract.Contract):
         if self._now() >= order["deadline"]:
             raise gl.vm.UserError("Order has expired")
 
-        sender = str(gl.message.sender_address)
+        sender = _addr(gl.message.sender_address)
         if sender == order["client"]:
             raise gl.vm.UserError("Client cannot claim their own order")
 
@@ -197,7 +235,7 @@ class Foreman(gl.contract.Contract):
         still unclaimed — once a provider has committed work, cancellation
         goes through the same adjudicated path as everything else."""
         order = self._get_order(order_id)
-        if str(gl.message.sender_address) != order["client"]:
+        if _addr(gl.message.sender_address) != order["client"]:
             raise gl.vm.UserError("Only the client can cancel this order")
         if order["status"] != STATUS_OPEN:
             raise gl.vm.UserError("Order can no longer be cancelled")
@@ -288,7 +326,7 @@ Decide:
 Respond with ONLY this JSON shape, no other text:
 {{"accepted": true/false, "payout_percent": int, "reasoning": "...", "red_flags": ["..."]}}
 """
-            result = gl.nondet.exec_prompt(prompt, response_format="json")
+            result = _parse_llm_json(gl.nondet.exec_prompt(prompt, response_format="json"))
             return {
                 "accepted": bool(result.get("accepted", False)),
                 "payout_percent": max(0, min(100, int(result.get("payout_percent", 0)))),
@@ -299,11 +337,14 @@ Respond with ONLY this JSON shape, no other text:
         def validator_fn(leaders_res) -> bool:
             if not isinstance(leaders_res, gl.vm.Return):
                 return False
-            mine = leader_fn()
             leader_data = leaders_res.calldata
-            if mine["accepted"] != leader_data["accepted"]:
+            if not isinstance(leader_data, dict):
                 return False
-            return abs(mine["payout_percent"] - leader_data["payout_percent"]) <= PAYOUT_TOLERANCE
+            mine = leader_fn()
+            if mine["accepted"] != bool(leader_data.get("accepted", False)):
+                return False
+            leader_payout = max(0, min(100, int(leader_data.get("payout_percent", 0))))
+            return abs(mine["payout_percent"] - leader_payout) <= PAYOUT_TOLERANCE
 
         return gl.vm.run_nondet(leader_fn, validator_fn)
 
@@ -315,7 +356,7 @@ Respond with ONLY this JSON shape, no other text:
         evidence URL. Adjudication and payout happen atomically, in the
         same transaction — there is no separate "review" step."""
         order = self._get_order(order_id)
-        if str(gl.message.sender_address) != order["provider"]:
+        if _addr(gl.message.sender_address) != order["provider"]:
             raise gl.vm.UserError("Only the claimed provider can submit this order")
         if order["status"] != STATUS_CLAIMED:
             raise gl.vm.UserError("Order is not awaiting delivery")
@@ -341,7 +382,7 @@ Respond with ONLY this JSON shape, no other text:
         adjudication with fresh evidence plus whatever extra context they
         provide. The new verdict is final."""
         order = self._get_order(order_id)
-        if str(gl.message.sender_address) != order["client"]:
+        if _addr(gl.message.sender_address) != order["client"]:
             raise gl.vm.UserError("Only the client can appeal this order")
         if order["status"] not in (STATUS_COMPLETED, STATUS_REJECTED):
             raise gl.vm.UserError("Order has not been adjudicated yet")
@@ -423,11 +464,13 @@ Respond with ONLY this JSON shape, no other text:
 
     @gl.public.view
     def get_orders_by_client(self, address: str) -> list:
-        return [o for o in self.get_all_orders() if o["client"] == address]
+        target = _addr(address)
+        return [o for o in self.get_all_orders() if o["client"] == target]
 
     @gl.public.view
     def get_orders_by_provider(self, address: str) -> list:
-        return [o for o in self.get_all_orders() if o["provider"] == address]
+        target = _addr(address)
+        return [o for o in self.get_all_orders() if o["provider"] == target]
 
     @gl.public.view
     def get_open_orders(self) -> list:
@@ -435,7 +478,7 @@ Respond with ONLY this JSON shape, no other text:
 
     @gl.public.view
     def get_provider_reputation(self, address: str) -> dict:
-        return self._get_provider(address)
+        return self._get_provider(_addr(address))
 
     @gl.public.view
     def is_expired(self, order_id: int) -> bool:
