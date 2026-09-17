@@ -23,7 +23,10 @@ an expiry refund once the deadline passes untouched.
 
 One appeal is allowed per resolved order, with room for fresh evidence and
 context — mirroring the finality window structure the whole GenLayer
-protocol uses at the consensus layer, at the application layer.
+protocol uses at the consensus layer, at the application layer. Because the
+first verdict already released the full escrow, appealing requires the
+client to attach a fresh deposit equal to that same escrow so the second,
+final settlement is fully funded rather than drawing on other orders' GEN.
 """
 
 import json
@@ -407,11 +410,24 @@ Respond with ONLY this JSON shape, no other text:
         order["delivered_at"] = self._now()
         self._resolve(order, verdict)
 
-    @gl.public.write
+    @gl.public.write.payable
     def appeal_delivery(self, order_id: int, additional_context: str) -> None:
         """The client gets exactly one appeal per order, re-running
         adjudication with fresh evidence plus whatever extra context they
-        provide. The new verdict is final."""
+        provide. The new verdict is final.
+
+        `_resolve` settles by transferring a full escrow-percentage split
+        again — exactly like the first resolution did. That first
+        resolution already sent the *entire* original escrow out of the
+        contract the moment it settled, so funding a second full
+        settlement has to come from somewhere: either freshly deposited
+        GEN, or (if we skipped this check) other clients' still-open
+        escrow. This method is therefore `payable` and requires the
+        appellant to attach GEN equal to the order's original
+        `escrow_wei` — the same amount `_resolve` will split and pay out
+        again. Whatever the new verdict doesn't award the provider comes
+        straight back to the client in the same transaction, same as the
+        first resolution."""
         order = self._get_order(order_id)
         if _addr(gl.message.sender_address) != order["client"]:
             raise gl.vm.UserError("Only the client can appeal this order")
@@ -419,6 +435,14 @@ Respond with ONLY this JSON shape, no other text:
             raise gl.vm.UserError("Order has not been adjudicated yet")
         if order["appeal_used"]:
             raise gl.vm.UserError("This order has already been appealed once")
+        required_deposit = int(order["escrow_wei"])
+        attached = int(gl.message.value)
+        if attached != required_deposit:
+            raise gl.vm.UserError(
+                "Appeal requires exactly "
+                f"{required_deposit} wei of GEN attached (the order's "
+                f"original escrow) to fund the re-settlement, got {attached}"
+            )
 
         # Reverse the first verdict's bookkeeping before re-adjudicating so
         # the second resolution starts from a clean slate. `disputed` is the

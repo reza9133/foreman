@@ -5,7 +5,8 @@ The old version of this module read `RPCPROTOCOL` / `RPCHOST` / `RPCPORT` with
 nothing imported this module, so calling `get_config()` raised `KeyError` — and
 the values it described did not match the network the rest of the project
 targets. This version is aligned with `gltest.config.yaml` and the frontend:
-Studio Dev (Consensus v0.6), chain id 61997.
+Studio Next (Consensus v0.6, including fees), chain id 61997 — the network
+required for this hackathon.
 
 `gltest` reads `gltest.config.yaml` directly and does not use this module, so
 this is only for scripts and notebooks that want the same endpoint without
@@ -18,9 +19,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Canonical Studio Dev RPC. studio-next.genlayer.com is the browser Studio UI
-# for the same chain, not an RPC endpoint.
-STUDIO_DEVNET_RPC_URL = "https://studio-dev.genlayer.com/api"
+# Canonical Studio Next RPC, per the hackathon's network requirements.
+STUDIO_DEVNET_RPC_URL = "https://studio-next.genlayer.com/api"
 STUDIO_DEVNET_CHAIN_ID = 61997
 
 

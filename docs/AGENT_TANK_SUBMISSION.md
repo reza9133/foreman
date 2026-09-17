@@ -77,7 +77,7 @@ submitting. Here's where each is answered in this repo:
 
 - **What have I built beyond the starter or boilerplate?**
   Starting point was `genlayer-project-boilerplate`'s `v2-dev` branch
-  (Transaction Kit RC2 wiring, Studio Dev network config). Everything
+  (Transaction Kit RC2 wiring, Studio Next network config). Everything
   domain-specific is new: the entire contract, its full test suite, the
   order-book frontend (landing page, browse/filter, create-order escrow
   flow, per-order action hub with role-aware actions, how-it-works page),
@@ -88,7 +88,7 @@ submitting. Here's where each is answered in this repo:
 - **Can someone use the frontend and follow clear instructions to verify
   the result?**
   Yes — root README "Quick start" walks from a clean checkout to a running
-  app against Studio Dev; the in-app **How it works** page explains the
+  app against Studio Next; the in-app **How it works** page explains the
   same flow for a non-technical reviewer without needing to read the repo.
 
 ## Security notes
@@ -105,3 +105,12 @@ submitting. Here's where each is answered in this repo:
   verdict, one appeal, a pre-claim cancellation by the client, or a
   post-deadline expiry — all permissionless or counterparty-gated, none
   admin-gated.
+- **Appeal is self-funded, not a second draw on the pool.** The first
+  resolution pays out the order's entire escrow the moment it settles, so a
+  naive re-run of `_resolve()` on appeal would have to fund a second full
+  settlement out of the contract's general balance — i.e. out of other
+  clients' still-open orders. `appeal_delivery` is `payable` and requires
+  the appellant to attach GEN equal to the order's original `escrow_wei`
+  before re-adjudicating, so the appeal's settlement is funded by that
+  fresh deposit instead. See `test_appeal_requires_matching_deposit` in
+  `tests/direct/test_foreman.py`.

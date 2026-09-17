@@ -360,7 +360,9 @@ def test_appeal_overturns_rejection_and_fixes_reputation(
     direct_vm.mock_web(r".*", {"status": 200, "body": "the delivered report content, take two"})
 
     direct_vm.sender = direct_alice
+    direct_vm.value = ONE_GEN  # appeal must fund its own re-settlement
     contract.appeal_delivery(order_id, "I re-checked manually, the deliverable is correct.")
+    direct_vm.value = 0
 
     order = contract.get_order(order_id)
     assert order["status"] == "completed"
@@ -384,13 +386,37 @@ def test_appeal_only_once(direct_vm, direct_deploy, direct_alice, direct_bob):
     mock_json_llm(direct_vm, r".*", ACCEPT_FULL)
     direct_vm.mock_web(r".*", {"status": 200, "body": "evidence take two"})
     direct_vm.sender = direct_alice
+    direct_vm.value = ONE_GEN
     contract.appeal_delivery(order_id, "more context")
+    direct_vm.value = 0
 
     direct_vm.clear_mocks()
     mock_json_llm(direct_vm, r".*", REJECT)
     direct_vm.mock_web(r".*", {"status": 200, "body": "evidence take three"})
     with direct_vm.expect_revert("already been appealed"):
         contract.appeal_delivery(order_id, "even more context")
+
+
+def test_appeal_requires_matching_deposit(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract = _deploy(direct_deploy, direct_vm)
+    order_id = _create_order(contract, direct_vm, direct_alice)
+    _claim_and_deliver(contract, direct_vm, direct_alice, direct_bob, order_id, REJECT)
+
+    direct_vm.clear_mocks()
+    mock_json_llm(direct_vm, r".*", ACCEPT_FULL)
+    direct_vm.mock_web(r".*", {"status": 200, "body": "evidence take two"})
+    direct_vm.sender = direct_alice
+
+    direct_vm.value = 0
+    with direct_vm.expect_revert("Appeal requires exactly"):
+        contract.appeal_delivery(order_id, "no deposit attached")
+
+    direct_vm.value = ONE_GEN // 2
+    with direct_vm.expect_revert("Appeal requires exactly"):
+        contract.appeal_delivery(order_id, "partial deposit attached")
+    direct_vm.value = 0
 
 
 def test_only_client_can_appeal(direct_vm, direct_deploy, direct_alice, direct_bob):
