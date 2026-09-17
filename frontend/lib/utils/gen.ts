@@ -2,7 +2,12 @@ const WEI_PER_GEN = 10n ** 18n;
 
 /** Format a wei string/bigint as a human GEN amount, trimmed of trailing zeros. */
 export function formatGen(wei: string | bigint | number, maxDecimals = 4): string {
-  const value = typeof wei === "bigint" ? wei : BigInt(Math.trunc(Number(wei)) || 0);
+  const value =
+    typeof wei === "bigint"
+      ? wei
+      : typeof wei === "string"
+        ? BigInt(wei || "0")
+        : BigInt(Math.trunc(wei) || 0);
   const whole = value / WEI_PER_GEN;
   const fraction = value % WEI_PER_GEN;
 

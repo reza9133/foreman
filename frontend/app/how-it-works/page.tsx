@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     icon: Scale,
     title: "3. Consensus judges the evidence, not the provider's word",
-    body: "Submitting a deliverable atomically triggers adjudication in the same transaction. GenLayer's leader validator fetches the evidence URL live and asks an LLM to judge it strictly against the order's own acceptance criteria — nothing else. Every other validator independently re-fetches the same URL and re-runs the same judgment. The network only reaches consensus if validators agree on both the accept/reject decision and the payout percentage (within a tolerance band); real disagreement forces a leader rotation rather than settling on an unreliable verdict.",
+    body: "Submitting a deliverable atomically triggers adjudication in the same transaction. GenLayer's leader validator fetches the evidence URL live and asks an LLM to score it against the order's own acceptance criteria — nothing else — as a single 0-100 payout percentage. Every other validator independently re-fetches the same URL and re-runs the same scoring. The network only reaches consensus if every validator's payout percentage lands within a tolerance band of the leader's; the accept/reject status is derived deterministically from that same percentage (50% or above is accepted), so there is exactly one axis to agree or disagree on. Real disagreement forces a leader rotation rather than settling on an unreliable verdict.",
   },
   {
     icon: Gavel,
