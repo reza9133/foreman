@@ -1,15 +1,16 @@
 import { studioDevnet } from "genlayer-js/chains";
 
-// Studio Dev (Consensus v0.6) is the deployment target. `studioDevnet` is the
-// SDK's own preset for it — chain id 61997, RPC https://studio-dev.genlayer.com/api
-// — so the defaults below are read off the preset rather than hardcoded, and a
-// future SDK bump moves the app with it instead of silently disagreeing.
-//
-// Note: studio-next.genlayer.com is the browser-facing Studio UI for this same
-// chain, not an RPC endpoint. Pointing NEXT_PUBLIC_GENLAYER_RPC_URL at it will
-// fail every read and write.
-const DEFAULT_RPC_URL = studioDevnet.rpcUrls.default.http[0];
-const DEFAULT_CHAIN_NAME = studioDevnet.name;
+// Studio Next (Consensus v0.6, including fees) is the required hackathon
+// deployment target — chain id 61997, RPC https://studio-next.genlayer.com/api,
+// explorer https://explorer-studio-dev.genlayer.com/. The installed
+// genlayer-js prerelease doesn't ship a `studioNext` preset yet, so this
+// still borrows `studioDevnet`'s shape (currency, defaults) but overrides the
+// RPC URL and name explicitly rather than trusting the preset's own RPC,
+// which points at the older Studio Dev endpoint. Swap this for a real
+// `studioNext` preset once genlayer-js ships one.
+const STUDIO_NEXT_RPC_URL = "https://studio-next.genlayer.com/api";
+const DEFAULT_RPC_URL = STUDIO_NEXT_RPC_URL;
+const DEFAULT_CHAIN_NAME = "GenLayer Studio Next";
 
 export interface GenLayerNetworkOverrides {
   chainId?: string;

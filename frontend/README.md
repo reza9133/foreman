@@ -24,8 +24,8 @@ cp .env.example .env
 
 3. Configure environment variables:
    - `NEXT_PUBLIC_CONTRACT_ADDRESS` - deployed Foreman contract address (see `../deploy/deployScript.ts`)
-   - `NEXT_PUBLIC_GENLAYER_RPC_URL` - GenLayer RPC URL (defaults to `https://studio-dev.genlayer.com/api`)
-   - `NEXT_PUBLIC_GENLAYER_CHAIN_ID` - RPC chain ID (defaults to `61997`, Studio Dev / Consensus v0.6)
+   - `NEXT_PUBLIC_GENLAYER_RPC_URL` - GenLayer RPC URL (defaults to `https://studio-next.genlayer.com/api`)
+   - `NEXT_PUBLIC_GENLAYER_CHAIN_ID` - RPC chain ID (defaults to `61997`, Studio Next / Consensus v0.6)
    - `NEXT_PUBLIC_GENLAYER_CHAIN_NAME` - Network label shown to users
 
    Change the RPC URL and chain ID together. The same resolved network is used

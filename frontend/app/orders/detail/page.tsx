@@ -41,7 +41,7 @@ const ACTION_COPY: Record<Action, { title: string; description: string }> = {
   appeal: {
     title: "Appeal the verdict",
     description:
-      "One appeal is allowed per order. This re-runs adjudication with fresh evidence and any extra context you provide.",
+      "One appeal is allowed per order. This re-runs adjudication with fresh evidence and any extra context you provide. The first verdict already paid out the original escrow, so appealing requires depositing that same amount again to fund the new settlement — whatever the new verdict doesn't award the provider comes straight back to you.",
   },
 };
 
@@ -91,6 +91,15 @@ function OrderDetailContent() {
         return { ...base, method: "appeal_delivery", args: [order.id, appealContext.trim()] };
     }
   }, [pendingAction, contractAddress, order, deliverableUrl, deliverableNote, appealContext]);
+
+  // `appeal_delivery` is payable and requires the appellant to attach GEN
+  // equal to the order's original escrow, so the contract can fund the
+  // re-settlement itself instead of drawing on other orders' escrow (see
+  // Foreman.appeal_delivery). Every other action here is non-payable.
+  const userValue = useMemo(() => {
+    if (pendingAction !== "appeal" || !order) return undefined;
+    return BigInt(order.escrow_wei);
+  }, [pendingAction, order]);
 
   const requireWallet = () => {
     if (!isConnected) {
@@ -348,6 +357,7 @@ function OrderDetailContent() {
         open={pendingAction !== null}
         onOpenChange={(open) => !open && setPendingAction(null)}
         tx={tx}
+        userValue={userValue}
         title={pendingAction ? ACTION_COPY[pendingAction].title : ""}
         description={pendingAction ? ACTION_COPY[pendingAction].description : ""}
         onDone={handleDone}
