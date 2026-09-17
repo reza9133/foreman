@@ -259,7 +259,7 @@ function OrderDetailContent() {
             <p className="text-sm font-semibold">Actions</p>
 
             <div className="flex flex-wrap gap-2">
-              {order.status === "open" && !isClient && (
+              {order.status === "open" && !isClient && !deadlinePassed && (
                 <Button onClick={() => startAction("claim")}>Claim order</Button>
               )}
               {order.status === "open" && isClient && (
