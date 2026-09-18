@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { User, LogOut, AlertCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/genlayer/wallet";
+import { switchToGenLayerNetwork } from "@/lib/genlayer/client";
 import { useProviderReputation } from "@/lib/hooks/useForeman";
 import { success, error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
@@ -87,6 +88,26 @@ export function AccountPanel() {
         });
       } else {
         userRejected("Account switch cancelled");
+      }
+    } finally {
+      setIsSwitching(false);
+    }
+  };
+
+  const handleSwitchNetwork = async () => {
+    try {
+      setIsSwitching(true);
+      setConnectionError("");
+      await switchToGenLayerNetwork();
+    } catch (err: any) {
+      console.error("Failed to switch network:", err);
+      if (!err.message?.includes("rejected")) {
+        setConnectionError(err.message || "Failed to switch network");
+        error("Failed to switch network", {
+          description: err.message || "Please switch networks manually in your wallet.",
+        });
+      } else {
+        userRejected("Network switch cancelled");
       }
     } finally {
       setIsSwitching(false);
@@ -196,8 +217,14 @@ export function AccountPanel() {
         </div>
 
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="relative">
             <User className="w-4 h-4" />
+            {!isOnCorrectNetwork && (
+              <span
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"
+                aria-label="Wrong network"
+              />
+            )}
           </Button>
         </DialogTrigger>
       </div>
@@ -248,9 +275,19 @@ export function AccountPanel() {
             <Alert variant="default" className="bg-yellow-500/10 border-yellow-500/20">
               <AlertCircle className="h-4 w-4 text-yellow-500" />
               <AlertTitle>Network Warning</AlertTitle>
-              <AlertDescription>
-                You&apos;re not on the GenLayer network. Please switch networks in
-                MetaMask or try reconnecting.
+              <AlertDescription className="space-y-2">
+                <p>
+                  You&apos;re not on the GenLayer network. Sending a transaction from the
+                  wrong network would use that network&apos;s own currency instead of GEN.
+                </p>
+                <Button
+                  onClick={handleSwitchNetwork}
+                  size="sm"
+                  className="w-full"
+                  disabled={isSwitching || isLoading}
+                >
+                  {isSwitching ? "Switching..." : "Switch Network"}
+                </Button>
               </AlertDescription>
             </Alert>
           )}
