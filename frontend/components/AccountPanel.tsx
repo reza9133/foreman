@@ -4,6 +4,8 @@ import { useState } from "react";
 import { User, LogOut, AlertCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { switchToGenLayerNetwork } from "@/lib/genlayer/client";
+import type { EIP6963ProviderDetail } from "@/lib/genlayer/eip6963";
+import { WalletPickerList } from "./WalletPickerList";
 import { useProviderReputation } from "@/lib/hooks/useForeman";
 import { success, error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
@@ -27,6 +29,7 @@ export function AccountPanel() {
     isMetaMaskInstalled,
     isOnCorrectNetwork,
     isLoading,
+    availableWallets,
     connectWallet,
     disconnectWallet,
     switchWalletAccount,
@@ -40,15 +43,15 @@ export function AccountPanel() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
 
-  const handleConnect = async () => {
-    if (!isMetaMaskInstalled) {
+  const handleConnect = async (walletDetail?: EIP6963ProviderDetail) => {
+    if (!walletDetail && availableWallets.length === 0 && !isMetaMaskInstalled) {
       return;
     }
 
     try {
       setIsConnecting(true);
       setConnectionError("");
-      await connectWallet();
+      await connectWallet(walletDetail);
       setIsModalOpen(false);
     } catch (err: any) {
       console.error("Failed to connect wallet:", err);
@@ -66,8 +69,8 @@ export function AccountPanel() {
     }
   };
 
-  const handleDisconnect = () => {
-    disconnectWallet();
+  const handleDisconnect = async () => {
+    await disconnectWallet();
     setIsModalOpen(false);
   };
 
@@ -130,19 +133,19 @@ export function AccountPanel() {
               Connect to GenLayer
             </DialogTitle>
             <DialogDescription>
-              Connect your MetaMask wallet to start betting
+              Connect your wallet to open and manage work orders
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
-            {!isMetaMaskInstalled ? (
+            {availableWallets.length === 0 && !isMetaMaskInstalled ? (
               <>
                 <Alert variant="default" className="bg-accent/10 border-accent/20">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>MetaMask Not Detected</AlertTitle>
+                  <AlertTitle>No Wallet Detected</AlertTitle>
                   <AlertDescription>
-                    Please install MetaMask to continue. MetaMask is a crypto
-                    wallet that allows you to interact with blockchain applications.
+                    Please install a wallet extension to continue — MetaMask is a
+                    good default if you don&apos;t already have one.
                   </AlertDescription>
                 </Alert>
 
@@ -157,22 +160,19 @@ export function AccountPanel() {
 
                 <div className="p-4 rounded-lg bg-muted/10 border border-muted/20">
                   <p className="text-xs text-muted-foreground">
-                    After installing MetaMask, refresh this page and click
+                    After installing a wallet, refresh this page and click
                     &quot;Connect Wallet&quot; again.
                   </p>
                 </div>
               </>
             ) : (
               <>
-                <Button
-                  onClick={handleConnect}
-                  variant="gradient"
-                  className="w-full h-14 text-lg"
+                <WalletPickerList
+                  wallets={availableWallets}
+                  onSelect={(wallet) => handleConnect(wallet)}
+                  onFallbackConnect={() => handleConnect()}
                   disabled={isConnecting}
-                >
-                  <User className="w-5 h-5 mr-2" />
-                  {isConnecting ? "Connecting..." : "Connect MetaMask"}
-                </Button>
+                />
 
                 {connectionError && (
                   <Alert variant="destructive">
@@ -184,13 +184,17 @@ export function AccountPanel() {
 
                 <div className="p-4 rounded-lg bg-muted/10 border border-muted/20">
                   <p className="text-xs text-muted-foreground">
-                    This will open MetaMask and prompt you to:
+                    Choosing a wallet will prompt it to:
                   </p>
                   <ol className="text-xs text-muted-foreground list-decimal list-inside mt-2 space-y-1">
                     <li>Connect your wallet to this application</li>
-                    <li>Add the GenLayer network to MetaMask</li>
+                    <li>Add the GenLayer network to your wallet</li>
                     <li>Switch to the GenLayer network</li>
                   </ol>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Disconnecting always forgets this choice, so you can pick a
+                    different wallet next time.
+                  </p>
                 </div>
               </>
             )}
