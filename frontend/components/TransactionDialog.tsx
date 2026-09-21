@@ -7,6 +7,7 @@ import { useTransactionKit } from "@/lib/genlayer/kit";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { GENLAYER_NETWORK, switchToGenLayerNetwork } from "@/lib/genlayer/client";
 import { Button } from "./ui/button";
+import { SpinnerIcon } from "./ui/spinner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { error as toastError } from "@/lib/utils/toast";
 
@@ -89,7 +90,13 @@ export function TransactionDialog({
               </span>
             </div>
             <Button className="w-full" onClick={handleSwitchNetwork} disabled={switching}>
-              {switching ? "Switching…" : `Switch to ${GENLAYER_NETWORK.chainName}`}
+              {switching ? (
+                <>
+                  <SpinnerIcon size="sm" /> Switching…
+                </>
+              ) : (
+                `Switch to ${GENLAYER_NETWORK.chainName}`
+              )}
             </Button>
           </div>
         ) : tx ? (

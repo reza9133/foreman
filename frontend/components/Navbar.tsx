@@ -82,9 +82,9 @@ export function Navbar() {
               className="flex items-center justify-between transition-all duration-500"
               style={{ height: `${headerHeight}px` }}
             >
-              <Link href="/" className="flex items-center gap-3">
-                <LogoMark size="md" className="flex md:hidden" />
-                <Logo size="md" className="hidden md:flex" />
+              <Link href="/" className="flex items-center gap-3 group">
+                <LogoMark size="md" className="flex md:hidden" animated />
+                <Logo size="md" className="hidden md:flex" animated />
                 <span className="text-lg font-bold ml-2 md:hidden">Foreman</span>
               </Link>
 
@@ -101,6 +101,9 @@ export function Navbar() {
                 </div>
                 <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
                   How it works
+                </Link>
+                <Link href="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Leaderboard
                 </Link>
               </div>
 

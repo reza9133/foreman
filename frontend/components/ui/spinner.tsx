@@ -43,3 +43,18 @@ export function SpinnerBlock({ label, className }: { label?: string; className?:
     </div>
   );
 }
+
+/**
+ * Bare spinner glyph, no wrapper, no label — for inline use next to short
+ * status text inside a button ("Switching…", "Connecting…") where the
+ * flex-column `Spinner` layout doesn't fit.
+ */
+export function SpinnerIcon({
+  size,
+  className,
+}: {
+  size?: VariantProps<typeof spinnerVariants>["size"];
+  className?: string;
+}) {
+  return <span className={cn(spinnerVariants({ size }), className)} aria-hidden="true" />;
+}

@@ -18,6 +18,10 @@ interface LogoProps {
   size?: LogoSize;
   theme?: LogoTheme;
   className?: string;
+  /** When true, the Foreman gear mark spins on hover of an ancestor with
+   *  the `group` class (e.g. the navbar's home link). GenLayer's own mark
+   *  is left untouched either way. */
+  animated?: boolean;
 }
 
 const sizeMap = {
@@ -31,6 +35,7 @@ export function Logo({
   size = 'md',
   theme = 'dark',
   className = '',
+  animated = false,
 }: LogoProps) {
   const colorClass = theme === 'dark' ? 'text-foreground' : 'text-background';
   const { mark: markSize, text: textSize } = sizeMap[size];
@@ -38,7 +43,9 @@ export function Logo({
   // Foreman Strong Mark (Gear + F symbol)
   const ForemanMark = () => (
     <svg
-      className={`${markSize} ${colorClass} transition-colors`}
+      className={`${markSize} ${colorClass} transition-colors ${
+        animated ? 'transition-transform duration-700 ease-out group-hover:rotate-[360deg]' : ''
+      }`}
       viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Foreman Logo"

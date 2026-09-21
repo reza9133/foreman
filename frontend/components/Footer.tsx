@@ -1,6 +1,17 @@
 import Link from "next/link";
-import { Github, Globe, Gavel } from "lucide-react";
+import { Github, Gavel } from "lucide-react";
 import { LogoMark } from "./Logo";
+
+/** Lucide dropped a dedicated X glyph after the Twitter rebrand — inline the
+ *  mark directly so this doesn't depend on which lucide-react version ships
+ *  it under which name. */
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
 
 export function Footer() {
   return (
@@ -40,13 +51,13 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://foreman-6on.pages.dev"
+                  href="https://x.com/amirhp771"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
                 >
-                  <Globe className="w-4 h-4" />
-                  foreman-6on.pages.dev
+                  <XIcon className="w-4 h-4" />
+                  @amirhp771
                 </a>
               </li>
               <li>

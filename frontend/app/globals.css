@@ -393,6 +393,39 @@
   }
 }
 
+/* Slow continuous rotation for the decorative hero gear — the Foreman mark
+   is literally a gear, so let it turn like one instead of sitting static. */
+@keyframes spinSlow {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 14s linear infinite;
+}
+
+.animate-spin-slow-reverse {
+  animation: spinSlow 20s linear infinite reverse;
+}
+
+/* Three-dot "validators reaching consensus" pulse, staggered per dot via
+   an inline animation-delay on each span. */
+@keyframes consensusPulse {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.animate-consensus-pulse {
+  animation: consensusPulse 1.6s ease-in-out infinite;
+}
+
 html {
   min-height: 100vh !important;
   height: 100%;

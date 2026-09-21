@@ -10,6 +10,7 @@ import { useProviderReputation } from "@/lib/hooks/useForeman";
 import { success, error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
 import { Button } from "./ui/button";
+import { SpinnerIcon } from "./ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ export function AccountPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
   const [isSwitching, setIsSwitching] = useState(false);
 
   const handleConnect = async (walletDetail?: EIP6963ProviderDetail) => {
@@ -50,6 +52,7 @@ export function AccountPanel() {
 
     try {
       setIsConnecting(true);
+      setConnectingWalletId(walletDetail?.info.uuid ?? "fallback");
       setConnectionError("");
       await connectWallet(walletDetail);
       setIsModalOpen(false);
@@ -66,6 +69,7 @@ export function AccountPanel() {
       }
     } finally {
       setIsConnecting(false);
+      setConnectingWalletId(null);
     }
   };
 
@@ -123,8 +127,16 @@ export function AccountPanel() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
           <Button variant="gradient" disabled={isLoading}>
-            <User className="w-4 h-4 mr-2" />
-            Connect Wallet
+            {isLoading ? (
+              <>
+                <SpinnerIcon size="sm" /> Loading wallet…
+              </>
+            ) : (
+              <>
+                <User className="w-4 h-4 mr-2" />
+                Connect Wallet
+              </>
+            )}
           </Button>
         </DialogTrigger>
         <DialogContent className="brand-card border-2">
@@ -172,6 +184,7 @@ export function AccountPanel() {
                   onSelect={(wallet) => handleConnect(wallet)}
                   onFallbackConnect={() => handleConnect()}
                   disabled={isConnecting}
+                  connectingId={connectingWalletId}
                 />
 
                 {connectionError && (
@@ -290,7 +303,13 @@ export function AccountPanel() {
                   className="w-full"
                   disabled={isSwitching || isLoading}
                 >
-                  {isSwitching ? "Switching..." : "Switch Network"}
+                  {isSwitching ? (
+                    <>
+                      <SpinnerIcon size="sm" /> Switching…
+                    </>
+                  ) : (
+                    "Switch Network"
+                  )}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -311,8 +330,12 @@ export function AccountPanel() {
               className="w-full"
               disabled={isSwitching || isLoading}
             >
-              <User className="w-4 h-4 mr-2" />
-              {isSwitching ? "Switching..." : "Switch Account"}
+              {isSwitching ? (
+                <SpinnerIcon size="sm" />
+              ) : (
+                <User className="w-4 h-4 mr-2" />
+              )}
+              {isSwitching ? "Switching…" : "Switch Account"}
             </Button>
 
             <Button
