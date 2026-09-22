@@ -321,43 +321,6 @@
     box-shadow: 0 4px 8px 0 oklch(0.55 0.37 265 / 0.3);
     filter: brightness(1.1);
   }
-
-  /* Betting Panel Button States (Simplified) */
-  .bet-button-unselected {
-    background: oklch(0.90 0.014 80 / 0.7);
-    border: 1px solid oklch(0.83 0.018 80 / 0.7);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .bet-button-unselected-a:hover {
-    background: oklch(0.28 0.12 80 / 0.6);
-    border-color: oklch(0.65 0.22 80 / 0.6);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 oklch(0.65 0.22 80 / 0.2);
-  }
-
-  .bet-button-unselected-b:hover {
-    background: oklch(0.28 0.15 265 / 0.6);
-    border-color: oklch(0.55 0.37 265 / 0.6);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 oklch(0.55 0.37 265 / 0.2);
-  }
-
-  .bet-button-selected-a {
-    background: oklch(0.98 0.006 80 / 0.9);
-    color: oklch(0.22 0.02 80);
-    border: 1px solid oklch(0.65 0.22 80);
-    box-shadow: 0 0 0 2px oklch(0.65 0.22 80 / 0.2), 0 4px 12px 0 oklch(0.65 0.22 80 / 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .bet-button-selected-b {
-    background: oklch(0.98 0.006 80 / 0.9);
-    color: oklch(0.22 0.02 80);
-    border: 1px solid oklch(0.55 0.37 265);
-    box-shadow: 0 0 0 2px oklch(0.55 0.37 265 / 0.2), 0 4px 12px 0 oklch(0.55 0.37 265 / 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
 }
 
 /* Brand spinner - conic gradient ring, matches purple → pink → blue palette */

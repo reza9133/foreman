@@ -313,6 +313,11 @@ function OrderDetailContent() {
                     value={deliverableUrl}
                     onChange={(e) => setDeliverableUrl(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Validators fetch this URL themselves and judge exactly what&rsquo;s there — an
+                    independently-hosted page (a client&rsquo;s own system, a public API, a third-party
+                    dashboard) carries more weight than one you control yourself.
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="deliverable-note">Note to the reviewer (optional)</Label>
