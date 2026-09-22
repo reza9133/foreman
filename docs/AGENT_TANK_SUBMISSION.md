@@ -28,6 +28,16 @@ a larger agent workflow.
 - **Evidence is independently checkable.** Every validator fetches the
   same `deliverable_url` itself — nothing about the verdict depends on
   data only the leader or a centralized backend can see.
+
+  One honest limitation: "independently checkable" isn't the same as
+  "authoritative." The contract has no way to require that
+  `deliverable_url` points somewhere the provider doesn't control — a
+  provider could, in principle, submit a page they host themselves. That's
+  a property of the general pattern (any AI-oracle escrow that reads a
+  URL has this same edge), not something `foreman.py` alone can close, so
+  the frontend's evidence-submission step now nudges providers toward an
+  independently-hosted URL (a client system, a public API, a third-party
+  dashboard) rather than silently accepting anything.
 - **Neutral consensus matters.** Client and provider are counterparties
   with opposite incentives; neither should be trusted to grade their own
   work, and neither has to trust the other's backend either.
