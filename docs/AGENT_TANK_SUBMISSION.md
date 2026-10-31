@@ -99,9 +99,11 @@ submitting. Here's where each is answered in this repo:
   Yes — root README "Quick start" walks from a clean checkout to a running
   app against Studionet; the in-app **How it works** page explains the
   same flow for a non-technical reviewer without needing to read the repo.
-  After deploying v2 to Studionet, the contract can also be inspected on the
+  The v2 contract is deployed on Studionet (chain id 61999) at
+  `0x239c12eBC52100196486C5E966723AB169555393` and can be inspected on the
   explorer (https://genlayer-explorer.vercel.app) without running anything
-  locally — add the new contract address here once it is deployed.
+  locally. The live E2E report in `reports/e2e-report.md` was produced against
+  this address.
 
 ## Security notes
 
