@@ -3,8 +3,8 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { SubmitInput, TrackedStatus } from "@genlayer/transaction-kit-react";
-import { AlertTriangle, ArrowLeft, Coins, FileText, Flag, Link as LinkIcon } from "lucide-react";
+import type { TxOutcome, TxRequest } from "@/lib/genlayer/transactions";
+import { AlertTriangle, ArrowLeft, Coins, Fingerprint, FileText, Flag, Link as LinkIcon } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AddressDisplay } from "@/components/AddressDisplay";
@@ -16,10 +16,14 @@ import { getContractAddress } from "@/lib/genlayer/client";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { useOrder, useInvalidateOrdersData } from "@/lib/hooks/useForeman";
 import { Spinner } from "@/components/ui/spinner";
+import { Countdown } from "@/components/Countdown";
+import { OrderTimeline } from "@/components/OrderTimeline";
+import { CriteriaChecklist } from "@/components/CriteriaChecklist";
+import { VerdictGauge } from "@/components/charts/VerdictGauge";
 import { formatGen, formatDeadline } from "@/lib/utils/gen";
 import { error, success } from "@/lib/utils/toast";
 
-type Action = "claim" | "cancel" | "expire" | "submit" | "appeal";
+type Action = "claim" | "cancel" | "expire" | "submit" | "appeal" | "abandon" | "extend";
 
 const ACTION_COPY: Record<Action, { title: string; description: string }> = {
   claim: {
@@ -38,6 +42,15 @@ const ACTION_COPY: Record<Action, { title: string; description: string }> = {
     title: "Submit your deliverable",
     description:
       "GenLayer validators will fetch this URL live and adjudicate it against the order's acceptance criteria, atomically. This cannot be undone.",
+  },
+  abandon: {
+    title: "Release this claim",
+    description:
+      "The order goes back to the open pool and a mark is added to your abandoned counter. Use it only if you cannot deliver — it is cheaper than letting the deadline expire.",
+  },
+  extend: {
+    title: "Extend the deadline",
+    description: "Gives the provider more time. Extensions are capped at 30 days per call and 365 days of total order lifetime.",
   },
   appeal: {
     title: "Appeal the verdict",
@@ -65,13 +78,15 @@ function OrderDetailContent() {
   const [deliverableUrl, setDeliverableUrl] = useState("");
   const [deliverableNote, setDeliverableNote] = useState("");
   const [appealContext, setAppealContext] = useState("");
+  const [extendDays, setExtendDays] = useState("3");
+  const [showExtendForm, setShowExtendForm] = useState(false);
 
   const isClient = !!address && !!order && address.toLowerCase() === order.client.toLowerCase();
   const isProvider = !!address && !!order && address.toLowerCase() === order.provider.toLowerCase();
   const deadlinePassed = !!order && Date.now() / 1000 >= order.deadline;
   const isSettled = !!order && ["completed", "rejected", "cancelled", "expired"].includes(order.status);
 
-  const tx = useMemo<SubmitInput | null>(() => {
+  const tx = useMemo<TxRequest | null>(() => {
     if (!pendingAction || !contractAddress || !order) return null;
     const base = { address: contractAddress as `0x${string}`, kind: "write" as const };
 
@@ -88,10 +103,14 @@ function OrderDetailContent() {
           method: "submit_deliverable",
           args: [order.id, deliverableUrl.trim(), deliverableNote.trim()],
         };
+      case "abandon":
+        return { ...base, method: "abandon_claim", args: [order.id] };
+      case "extend":
+        return { ...base, method: "extend_deadline", args: [order.id, Math.max(1, Math.min(30, Number(extendDays) || 1))] };
       case "appeal":
         return { ...base, method: "appeal_delivery", args: [order.id, appealContext.trim()] };
     }
-  }, [pendingAction, contractAddress, order, deliverableUrl, deliverableNote, appealContext]);
+  }, [pendingAction, contractAddress, order, deliverableUrl, deliverableNote, appealContext, extendDays]);
 
   // `appeal_delivery` is payable and requires the appellant to attach GEN
   // equal to the order's original escrow, so the contract can fund the
@@ -115,13 +134,14 @@ function OrderDetailContent() {
     setPendingAction(action);
   };
 
-  const handleDone = (status: TrackedStatus) => {
-    if (status.successful !== false) {
+  const handleDone = (outcome: TxOutcome) => {
+    if (outcome.successful) {
       invalidate();
       success("Transaction confirmed");
       setPendingAction(null);
       setShowDeliverableForm(false);
       setShowAppealForm(false);
+      setShowExtendForm(false);
       setDeliverableUrl("");
       setDeliverableNote("");
       setAppealContext("");
@@ -157,7 +177,11 @@ function OrderDetailContent() {
     );
   }
 
-  const canAppeal = (order.status === "completed" || order.status === "rejected") && isClient && !order.appeal_used;
+  // v2 orders carry an appeal window; v1 orders have none (undefined → always open).
+  const appealWindowOpen = order.appeal_deadline === undefined || Date.now() / 1000 <= order.appeal_deadline;
+  const canAppeal =
+    (order.status === "completed" || order.status === "rejected") && isClient && !order.appeal_used && appealWindowOpen;
+  const canExtend = isClient && (order.status === "open" || order.status === "claimed") && !deadlinePassed;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -184,10 +208,18 @@ function OrderDetailContent() {
                 <span className="font-semibold">{formatGen(order.escrow_wei)} GEN</span>
                 <span className="text-muted-foreground">escrowed</span>
               </div>
-              <div className="text-muted-foreground">{formatDeadline(order.deadline)}</div>
+              <div className="text-muted-foreground">
+                {formatDeadline(order.deadline)}
+                {(order.status === "open" || order.status === "claimed") && (
+                  <span className="block text-xs">
+                    <Countdown target={order.deadline} />
+                    {!!order.extensions && ` · extended ${order.extensions}×`}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm pt-2 border-t border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm pt-2 border-t border-border/70">
               <div>
                 <p className="text-muted-foreground mb-1">Client</p>
                 <AddressDisplay address={order.client} showCopy maxLength={16} />
@@ -195,14 +227,19 @@ function OrderDetailContent() {
               <div>
                 <p className="text-muted-foreground mb-1">Provider</p>
                 {order.provider ? (
-                  <AddressDisplay address={order.provider} showCopy maxLength={16} />
+                  <span className="inline-flex items-center gap-2">
+                    <AddressDisplay address={order.provider} showCopy maxLength={16} />
+                    <Link href={`/providers/detail?address=${order.provider}`} className="text-xs text-accent hover:underline">
+                      profile
+                    </Link>
+                  </span>
                 ) : (
                   <span className="text-muted-foreground">Unclaimed</span>
                 )}
               </div>
             </div>
 
-            <div className="space-y-3 pt-2 border-t border-white/10">
+            <div className="space-y-3 pt-2 border-t border-border/70">
               <div>
                 <p className="text-sm font-semibold mb-1">Specification</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{order.spec}</p>
@@ -214,7 +251,7 @@ function OrderDetailContent() {
             </div>
 
             {order.deliverable_url && (
-              <div className="pt-2 border-t border-white/10 space-y-1">
+              <div className="pt-2 border-t border-border/70 space-y-1">
                 <p className="text-sm font-semibold flex items-center gap-1.5">
                   <FileText className="w-4 h-4" /> Delivered evidence
                 </p>
@@ -233,16 +270,33 @@ function OrderDetailContent() {
             )}
 
             {(order.status === "completed" || order.status === "rejected") && (
-              <div className="pt-2 border-t border-white/10 space-y-2">
+              <div className="pt-2 border-t border-border/70 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold">Verdict</p>
                   <span className="text-sm text-accent font-semibold">
                     {order.payout_percent}% released to provider
                   </span>
                 </div>
+                <div className="flex justify-center py-1">
+                  <VerdictGauge percent={order.payout_percent} />
+                </div>
                 <p className="text-sm text-muted-foreground">{order.verdict_reasoning}</p>
+                <CriteriaChecklist results={order.criteria_results} />
+                {order.evidence_fingerprint && (
+                  <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
+                    <Fingerprint className="w-3.5 h-3.5" />
+                    Evidence fingerprint <code className="font-mono">{order.evidence_fingerprint}</code>
+                    · {order.evidence_chars?.toLocaleString()} chars read
+                    {order.evidence_truncated && <span className="chip chip-warn !py-0">truncated</span>}
+                  </p>
+                )}
+                {!order.appeal_used && order.appeal_deadline ? (
+                  <p className="text-xs text-muted-foreground">
+                    Appeal window: <Countdown target={order.appeal_deadline} doneLabel="closed" label="remaining" />
+                  </p>
+                ) : null}
                 {order.red_flags?.length > 0 && (
-                  <div className="flex items-start gap-1.5 text-sm text-amber-300">
+                  <div className="flex items-start gap-1.5 text-sm text-amber-700">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{order.red_flags.join("; ")}</span>
                   </div>
@@ -277,6 +331,16 @@ function OrderDetailContent() {
                   Submit deliverable
                 </Button>
               )}
+              {order.status === "claimed" && isProvider && !deadlinePassed && (
+                <Button variant="outline" onClick={() => startAction("abandon")}>
+                  Release claim
+                </Button>
+              )}
+              {canExtend && (
+                <Button variant="outline" onClick={() => setShowExtendForm((v) => !v)}>
+                  Extend deadline
+                </Button>
+              )}
               {(order.status === "open" || order.status === "claimed") && deadlinePassed && (
                 <Button variant="outline" onClick={() => startAction("expire")}>
                   Expire & refund client
@@ -303,8 +367,18 @@ function OrderDetailContent() {
               </p>
             )}
 
+            {showExtendForm && (
+              <div className="flex items-end gap-3 pt-3 border-t border-border/70">
+                <div className="space-y-1.5 w-32">
+                  <Label htmlFor="extend-days">Extra days (1–30)</Label>
+                  <Input id="extend-days" type="number" min={1} max={30} value={extendDays} onChange={(e) => setExtendDays(e.target.value)} />
+                </div>
+                <Button onClick={() => startAction("extend")}>Review extension</Button>
+              </div>
+            )}
+
             {showDeliverableForm && (
-              <div className="space-y-3 pt-3 border-t border-white/10">
+              <div className="space-y-3 pt-3 border-t border-border/70">
                 <div className="space-y-1.5">
                   <Label htmlFor="deliverable-url">Evidence URL</Label>
                   <Input
@@ -316,7 +390,9 @@ function OrderDetailContent() {
                   <p className="text-xs text-muted-foreground">
                     Validators fetch this URL themselves and judge exactly what&rsquo;s there — an
                     independently-hosted page (a client&rsquo;s own system, a public API, a third-party
-                    dashboard) carries more weight than one you control yourself.
+                    dashboard) carries more weight than one you control yourself. It must be a public
+                    http(s) address: localhost, private networks and embedded credentials are refused, and
+                    pages that answer with an error or an empty body are not judged.
                   </p>
                 </div>
                 <div className="space-y-1.5">
@@ -339,7 +415,7 @@ function OrderDetailContent() {
             )}
 
             {showAppealForm && (
-              <div className="space-y-3 pt-3 border-t border-white/10">
+              <div className="space-y-3 pt-3 border-t border-border/70">
                 <div className="space-y-1.5">
                   <Label htmlFor="appeal-context">Additional context for the re-review</Label>
                   <textarea
@@ -355,6 +431,11 @@ function OrderDetailContent() {
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="brand-card p-6 space-y-4">
+            <p className="text-sm font-semibold">Timeline</p>
+            <OrderTimeline entries={order.timeline ?? []} />
           </div>
         </div>
       </main>

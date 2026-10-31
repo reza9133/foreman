@@ -18,7 +18,11 @@ import { AnimatedGear } from "@/components/AnimatedGear";
 import { ConsensusDots } from "@/components/ConsensusDots";
 import { Button } from "@/components/ui/button";
 import { SpinnerBlock } from "@/components/ui/spinner";
-import { useOpenOrders, useAllOrders } from "@/lib/hooks/useForeman";
+import { EscrowSceneLoader } from "@/components/scene/EscrowSceneLoader";
+import { CountUp } from "@/components/CountUp";
+import { Reveal } from "@/components/Reveal";
+import { TiltCard } from "@/components/TiltCard";
+import { useOrdersPage, useProtocolStats } from "@/lib/hooks/useForeman";
 
 const STEPS = [
   {
@@ -44,21 +48,21 @@ const STEPS = [
 ];
 
 export default function HomePage() {
-  const { data: openOrders, isLoading } = useOpenOrders();
-  const { data: allOrders } = useAllOrders();
+  // Three small reads instead of downloading every order: counters are O(1)
+  // on-chain and each page is a fixed-size slice.
+  const { data: stats } = useProtocolStats();
+  const { data: openPage, isLoading } = useOrdersPage(0, 6, "open");
+  const { data: completedPage } = useOrdersPage(0, 3, "completed");
+  const { data: rejectedPage } = useOrdersPage(0, 3, "rejected");
 
-  const total = allOrders?.length ?? 0;
-  const adjudicated =
-    allOrders?.filter((o) => o.status === "completed" || o.status === "rejected").length ?? 0;
-  const acceptedRate =
-    adjudicated > 0
-      ? Math.round(
-          ((allOrders?.filter((o) => o.status === "completed").length ?? 0) / adjudicated) * 100
-        )
-      : null;
+  const openOrders = openPage?.orders ?? [];
+  const total = stats?.order_count ?? 0;
+  const completedCount = completedPage?.total_matching ?? 0;
+  const rejectedCount = rejectedPage?.total_matching ?? 0;
+  const adjudicated = completedCount + rejectedCount;
+  const acceptedRate = adjudicated > 0 ? Math.round((completedCount / adjudicated) * 100) : null;
 
-  const recentlyAdjudicated = (allOrders ?? [])
-    .filter((o) => o.status === "completed" || o.status === "rejected")
+  const recentlyAdjudicated = [...(completedPage?.orders ?? []), ...(rejectedPage?.orders ?? [])]
     .sort((a, b) => (b.resolved_at ?? 0) - (a.resolved_at ?? 0))
     .slice(0, 3);
 
@@ -75,9 +79,10 @@ export default function HomePage() {
                 static. Purely visual, aria-hidden, clipped on small screens. */}
             <AnimatedGear className="pointer-events-none select-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] opacity-[0.07] -z-10 hidden sm:block" />
 
+
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 rounded-full px-3 py-1 mb-5">
               <Gavel className="w-3.5 h-3.5" />
-              Built on GenLayer · Agent Tank Hackathon
+              Built on GenLayer · v2 milestone
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-tight">
               Escrow and adjudication for
@@ -108,14 +113,41 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* 3D: how a verdict forms. Its own band so it never sits behind text. */}
+          <Reveal>
+            <div className="brand-card overflow-hidden mb-14 grid grid-cols-1 md:grid-cols-[1fr_1.1fr] items-center">
+              <div className="p-6 md:p-10 space-y-4 order-2 md:order-1">
+                <h2 className="text-2xl md:text-3xl font-bold">Watch a verdict form</h2>
+                <p className="text-muted-foreground">
+                  The amber core is the escrow vault. Each blue node is an independent validator: they all fetch the
+                  evidence themselves, light up one by one, then converge. When their payouts agree within tolerance
+                  the vault releases GEN, in the same transaction.
+                </p>
+                <ul className="text-sm space-y-1.5 text-muted-foreground">
+                  <li><span className="chip chip-info mr-2">fetch</span>every validator reads the evidence URL</li>
+                  <li><span className="chip chip-warn mr-2">consensus</span>payouts must agree within 15 points</li>
+                  <li><span className="chip chip-ok mr-2">release</span>escrow splits provider / client at once</li>
+                </ul>
+                <Link href="/lifecycle" className="text-sm text-accent hover:underline inline-flex items-center gap-1">
+                  Explore the full lifecycle <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+              <div className="h-72 md:h-96 order-1 md:order-2 relative" role="img" aria-label="Animated 3D diagram of validators reaching consensus around an escrow vault">
+                {/* decorative fallback shown until (or unless) WebGL starts */}
+                <AnimatedGear className="absolute inset-0 m-auto w-48 h-48 opacity-10" />
+                <EscrowSceneLoader className="absolute inset-0" />
+              </div>
+            </div>
+          </Reveal>
+
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14 animate-slide-up">
             <div className="brand-card brand-card-hover p-5 text-center">
-              <p className="text-3xl font-bold text-accent">{total}</p>
+              <p className="text-3xl font-bold text-accent"><CountUp value={total} /></p>
               <p className="text-sm text-muted-foreground mt-1">Work orders opened</p>
             </div>
             <div className="brand-card brand-card-hover p-5 text-center">
-              <p className="text-3xl font-bold text-accent">{adjudicated}</p>
+              <p className="text-3xl font-bold text-accent"><CountUp value={adjudicated} /></p>
               <p className="text-sm text-muted-foreground mt-1">Adjudicated by consensus</p>
             </div>
             <div className="brand-card brand-card-hover p-5 text-center">
@@ -191,12 +223,12 @@ export default function HomePage() {
                       {order.verdict_reasoning || "No reasoning recorded."}
                     </p>
                     {order.red_flags?.length > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs text-amber-300">
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700">
                         <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                         <span className="line-clamp-1">{order.red_flags.join("; ")}</span>
                       </div>
                     )}
-                    <div className="text-xs text-muted-foreground pt-2 border-t border-white/10 mt-1">
+                    <div className="text-xs text-muted-foreground pt-2 border-t border-border/70 mt-1">
                       Provider <AddressDisplay address={order.provider} maxLength={10} />
                     </div>
                   </Link>
@@ -216,7 +248,7 @@ export default function HomePage() {
 
             {isLoading ? (
               <SpinnerBlock label="Loading orders…" />
-            ) : !openOrders || openOrders.length === 0 ? (
+            ) : openOrders.length === 0 ? (
               <div className="brand-card p-10 text-center">
                 <p className="text-muted-foreground">
                   No open orders yet. Be the first agent to put GEN on the line.
@@ -227,7 +259,7 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {openOrders.slice(0, 6).map((order) => (
+                {openOrders.map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>

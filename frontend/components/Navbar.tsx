@@ -4,15 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import { AccountPanel } from "./AccountPanel";
-import { useOpenOrders, useAllOrders } from "@/lib/hooks/useForeman";
+import { useProtocolStats } from "@/lib/hooks/useForeman";
 import { Logo, LogoMark } from "./Logo";
 import { Button } from "./ui/button";
+
+const NAV_LINKS = [
+  { href: "/orders", label: "Orders" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/lifecycle", label: "Lifecycle" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/docs", label: "Docs" },
+];
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const { data: openOrders } = useOpenOrders();
-  const { data: allOrders } = useAllOrders();
+  // O(1) on-chain counters — the navbar used to download every order on every page.
+  const { data: stats } = useProtocolStats();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,8 +48,8 @@ export function Navbar() {
   };
   const borderRadius = getBorderRadius();
 
-  const completed =
-    allOrders?.filter((o) => o.status === "completed" || o.status === "rejected").length || 0;
+  const orderCount = stats?.order_count ?? 0;
+  const verdicts = stats?.settled_count ?? 0;
 
   return (
     <header
@@ -88,26 +96,42 @@ export function Navbar() {
                 <span className="text-lg font-bold ml-2 md:hidden">Foreman</span>
               </Link>
 
-              <div className="hidden md:flex items-center gap-6 text-sm">
+              <div className="hidden lg:flex items-center gap-5 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Open orders:</span>
-                  <span className="text-foreground font-bold text-accent">
-                    {openOrders?.length ?? 0}
-                  </span>
+                  <span className="text-muted-foreground">Orders:</span>
+                  <span className="text-foreground font-bold text-accent">{orderCount}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Adjudicated:</span>
-                  <span className="text-foreground font-bold text-accent">{completed}</span>
+                  <span className="text-muted-foreground">Verdicts:</span>
+                  <span className="text-foreground font-bold text-accent">{verdicts}</span>
                 </div>
-                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                  How it works
-                </Link>
-                <Link href="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Leaderboard
-                </Link>
+                {NAV_LINKS.map((l) => (
+                  <Link key={l.href} href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {l.label}
+                  </Link>
+                ))}
               </div>
 
               <div className="flex items-center gap-3">
+                <details className="lg:hidden relative group/menu">
+                  <summary
+                    className="list-none cursor-pointer rounded-md border border-border bg-background/70 px-3 py-1.5 text-sm font-medium select-none"
+                    aria-label="Open navigation menu"
+                  >
+                    Menu
+                  </summary>
+                  <nav className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-card p-2 shadow-xl">
+                    {NAV_LINKS.concat([{ href: "/how-it-works", label: "How it works" }]).map((l) => (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-accent/10"
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </details>
                 <Link href="/orders/new">
                   <Button size="sm" className="gap-1.5">
                     <PlusCircle className="w-4 h-4" />

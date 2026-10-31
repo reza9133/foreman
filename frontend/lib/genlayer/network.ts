@@ -1,16 +1,11 @@
-import { studioDevnet } from "genlayer-js/chains";
+import { studionet } from "genlayer-js/chains";
 
-// Studio Next (Consensus v0.6, including fees) is the required hackathon
-// deployment target — chain id 61997, RPC https://studio-next.genlayer.com/api,
-// explorer https://explorer-studio-dev.genlayer.com/. The installed
-// genlayer-js prerelease doesn't ship a `studioNext` preset yet, so this
-// still borrows `studioDevnet`'s shape (currency, defaults) but overrides the
-// RPC URL and name explicitly rather than trusting the preset's own RPC,
-// which points at the older Studio Dev endpoint. Swap this for a real
-// `studioNext` preset once genlayer-js ships one.
-const STUDIO_NEXT_RPC_URL = "https://studio-next.genlayer.com/api";
-const DEFAULT_RPC_URL = STUDIO_NEXT_RPC_URL;
-const DEFAULT_CHAIN_NAME = "GenLayer Studio Next";
+// Studionet (the stable GenLayer Studio) is this project's deployment target:
+// chain id 61999, RPC https://studio.genlayer.com/api. The SDK ships a
+// first-class `studionet` preset, so the defaults below come straight from it
+// and every override stays optional.
+const DEFAULT_RPC_URL = studionet.rpcUrls.default.http[0];
+const DEFAULT_CHAIN_NAME = studionet.name;
 
 export interface GenLayerNetworkOverrides {
   chainId?: string;
@@ -21,7 +16,7 @@ export interface GenLayerNetworkOverrides {
 
 function parseChainId(value: string | undefined): number {
   if (value === undefined || value.trim() === "") {
-    return studioDevnet.id;
+    return studionet.id;
   }
 
   const chainId = Number(value);
@@ -33,8 +28,8 @@ function parseChainId(value: string | undefined): number {
 }
 
 /**
- * Resolve one network definition shared by MetaMask, genlayer-js, and
- * Transaction Kit. Keeping these consumers on the same object prevents an RPC
+ * Resolve one network definition shared by MetaMask and genlayer-js.
+ * Keeping these consumers on the same object prevents an RPC
  * endpoint override from producing transactions signed for a different chain.
  */
 export function createGenLayerNetworkConfig(
@@ -43,10 +38,10 @@ export function createGenLayerNetworkConfig(
   const chainId = parseChainId(overrides.chainId);
   const chainName = overrides.chainName || DEFAULT_CHAIN_NAME;
   const rpcUrl = overrides.rpcUrl || DEFAULT_RPC_URL;
-  const symbol = overrides.symbol || studioDevnet.nativeCurrency.symbol;
+  const symbol = overrides.symbol || studionet.nativeCurrency.symbol;
 
   const chain = {
-    ...studioDevnet,
+    ...studionet,
     id: chainId,
     name: chainName,
     nativeCurrency: {
@@ -59,7 +54,7 @@ export function createGenLayerNetworkConfig(
         http: [rpcUrl],
       },
     },
-  } satisfies typeof studioDevnet;
+  } satisfies typeof studionet;
 
   return {
     chain,

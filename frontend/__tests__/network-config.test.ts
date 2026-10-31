@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { studioDevnet } from "genlayer-js/chains";
+import { studionet } from "genlayer-js/chains";
 import {
   GENLAYER_CHAIN,
   GENLAYER_CHAIN_ID,
@@ -9,18 +9,14 @@ import {
 } from "../lib/genlayer/network";
 
 describe("GenLayer network configuration", () => {
-  it("defaults every consumer to Studio Next (chain id shared with the SDK's studioDevnet preset)", () => {
-    // The installed genlayer-js prerelease has no `studioNext` preset yet, so
-    // `studioDevnet` is only borrowed for its chain id / native currency
-    // shape — the RPC URL and display name are Studio Next's own, not the
-    // preset's.
+  it("defaults every consumer to Studionet (chain 61999, studio.genlayer.com)", () => {
     expect(GENLAYER_CHAIN).toMatchObject({
-      id: studioDevnet.id,
-      name: "GenLayer Studio Next",
-      rpcUrls: { default: { http: ["https://studio-next.genlayer.com/api"] } },
+      id: 61999,
+      name: studionet.name,
+      rpcUrls: { default: { http: ["https://studio.genlayer.com/api"] } },
     });
-    expect(GENLAYER_CHAIN_ID).toBe(studioDevnet.id);
-    expect(GENLAYER_CHAIN_ID_HEX).toBe(`0x${studioDevnet.id.toString(16).toUpperCase()}`);
+    expect(GENLAYER_CHAIN_ID).toBe(studionet.id);
+    expect(GENLAYER_CHAIN_ID_HEX).toBe(`0x${studionet.id.toString(16).toUpperCase()}`);
     expect(GENLAYER_NETWORK).toMatchObject({
       chainId: GENLAYER_CHAIN_ID_HEX,
       chainName: GENLAYER_CHAIN.name,

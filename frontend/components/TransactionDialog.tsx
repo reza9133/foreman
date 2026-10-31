@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { GenLayerTransactionPanel, type SubmitInput, type TrackedStatus } from "@genlayer/transaction-kit-react";
-import { useTransactionKit } from "@/lib/genlayer/kit";
+import { TransactionPanel } from "./TransactionPanel";
+import type { TxOutcome, TxRequest } from "@/lib/genlayer/transactions";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { GENLAYER_NETWORK, switchToGenLayerNetwork } from "@/lib/genlayer/client";
 import { Button } from "./ui/button";
@@ -12,14 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { error as toastError } from "@/lib/utils/toast";
 
 /**
- * Shared wrapper around Transaction Kit's review + submit panel. Every
- * write action in Foreman (claim, cancel, expire, submit deliverable,
- * appeal) funnels through this same dialog so the person always gets the
- * same "review before you sign" experience, regardless of which action
- * they triggered.
+ * Shared wrapper around the review + submit panel. Every write action in
+ * Foreman (claim, cancel, expire, submit deliverable, appeal) funnels
+ * through this same dialog so the person always gets the same "review
+ * before you sign" experience, regardless of which action they triggered.
  *
- * Transaction Kit trusts the wallet's currently-active chain — it does
- * not itself verify or switch networks before signing. If MetaMask is
+ * The panel trusts the wallet's currently-active chain. If MetaMask is
  * still on a different chain (e.g. a stale mainnet session from before
  * this dapp was opened), `eth_sendTransaction` sends the escrow value as
  * that chain's native currency instead of GEN, which both misprices the
@@ -40,17 +38,15 @@ export function TransactionDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tx: SubmitInput | null;
-  /** GEN (in wei) to attach to the call — e.g. the escrow on create_order.
-   *  Separate from `tx` itself: Transaction Kit prices and signs value
-   *  transfers through this dedicated prop, not through SubmitInput. */
+  tx: TxRequest | null;
+  /** GEN (in wei) to attach to the call, e.g. the escrow on create_order.
+   *  Kept separate from `tx`, which only describes the method and arguments. */
   userValue?: bigint;
   title: string;
   description: string;
-  onDone: (status: TrackedStatus) => void;
+  onDone: (outcome: TxOutcome) => void;
 }) {
   const { address, isOnCorrectNetwork } = useWallet();
-  const kit = useTransactionKit(address);
   const [switching, setSwitching] = useState(false);
 
   const handleSwitchNetwork = async () => {
@@ -74,13 +70,13 @@ export function TransactionDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {!kit ? (
+        {!address ? (
           <p className="text-sm text-muted-foreground mt-4">
             Connect your wallet to continue.
           </p>
         ) : !isOnCorrectNetwork ? (
           <div className="mt-4 space-y-3">
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+            <div className="flex items-start gap-2 rounded-md border border-amber-600/35 bg-amber-500/10 p-3 text-sm text-amber-200">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
                 Your wallet isn&rsquo;t on {GENLAYER_NETWORK.chainName}. Signing from the
@@ -101,13 +97,11 @@ export function TransactionDialog({
           </div>
         ) : tx ? (
           <div className="mt-4">
-            <GenLayerTransactionPanel
-              kit={kit}
+            <TransactionPanel
               tx={tx}
+              account={address}
               userValue={userValue}
               network={GENLAYER_NETWORK.chainName}
-              theme="dark"
-              trackUntil="decided"
               onDone={onDone}
             />
           </div>

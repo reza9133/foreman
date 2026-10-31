@@ -24,12 +24,12 @@ cp .env.example .env
 
 3. Configure environment variables:
    - `NEXT_PUBLIC_CONTRACT_ADDRESS` - deployed Foreman contract address (see `../deploy/deployScript.ts`)
-   - `NEXT_PUBLIC_GENLAYER_RPC_URL` - GenLayer RPC URL (defaults to `https://studio-next.genlayer.com/api`)
-   - `NEXT_PUBLIC_GENLAYER_CHAIN_ID` - RPC chain ID (defaults to `61997`, Studio Next / Consensus v0.6)
+   - `NEXT_PUBLIC_GENLAYER_RPC_URL` - GenLayer RPC URL (defaults to `https://studio.genlayer.com/api`)
+   - `NEXT_PUBLIC_GENLAYER_CHAIN_ID` - RPC chain ID (defaults to `61999`, Studionet)
    - `NEXT_PUBLIC_GENLAYER_CHAIN_NAME` - Network label shown to users
 
    Change the RPC URL and chain ID together. The same resolved network is used
-   by MetaMask, `genlayer-js`, and Transaction Kit.
+   by MetaMask, and `genlayer-js`.
 
 ## Development
 
@@ -64,8 +64,7 @@ npm start
 - **Next.js 16** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS v4** - Styling with custom glass-morphism theme
-- **genlayer-js** - GenLayer blockchain SDK
-- **@genlayer/transaction-kit-react** - review-then-sign transaction UI, fee estimation
+- **genlayer-js** - GenLayer blockchain SDK (stable `1.1.8`, matches Studionet)
 - **TanStack Query (React Query)** - Data fetching and caching
 - **Radix UI** - Accessible component primitives
 - **shadcn/ui** - Pre-built UI components

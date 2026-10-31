@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "@genlayer/transaction-kit-react/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Footer } from "@/components/Footer";
@@ -27,6 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* The body font is on the critical path of every page: fetch it early. */}
+        <link rel="preload" href="/fonts/Switzer-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body>
         <Providers>
           {children}

@@ -1,92 +1,58 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  GenLayerTransactionPanel,
-  createMockKit,
-  type SubmitInput,
-  type TransactionKit,
-  type TrackedStatus,
-} from "@genlayer/transaction-kit-react";
 
-const tx: SubmitInput = {
+const mocks = vi.hoisted(() => ({ submitWrite: vi.fn() }));
+
+vi.mock("../lib/genlayer/transactions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/genlayer/transactions")>()),
+  submitWrite: mocks.submitWrite,
+}));
+
+import { TransactionPanel } from "../components/TransactionPanel";
+import type { TxRequest } from "../lib/genlayer/transactions";
+
+const tx: TxRequest = {
   kind: "write",
   address: "0x1234567890123456789012345678901234567890",
   method: "create_order",
   args: ["Scrape competitor pricing", "Spec", "Criteria", 3],
 };
-
-function renderPanel(
-  onDone?: (status: TrackedStatus) => void,
-  kit: TransactionKit = createMockKit({ delays: { estimate: 0, submit: 0, step: 0 } }),
-) {
-  return render(
-    <GenLayerTransactionPanel
-      kit={kit}
-      tx={tx}
-      network="GenLayer Studio"
-      theme="dark"
-      trackUntil="decided"
-      onDone={onDone}
-    />,
-  );
-}
+const account = "0x0000000000000000000000000000000000000001";
 
 afterEach(() => {
   cleanup();
+  mocks.submitWrite.mockReset();
 });
 
-describe("GenLayerTransactionPanel", () => {
-  it("renders a fee quote and enables hold to sign", async () => {
-    renderPanel();
+describe("TransactionPanel", () => {
+  it("shows what is about to be signed, including the attached GEN", () => {
+    render(<TransactionPanel tx={tx} account={account} userValue={10n ** 18n} network="Studionet" />);
 
-    await waitFor(() => {
-      expect(screen.getAllByText("GEN").length).toBeGreaterThan(0);
-    });
-    expect(screen.getByText(/Sized from network defaults/)).toBeInTheDocument();
-
-    const holdButton = document.querySelector<HTMLButtonElement>("button.gltk-hold");
-    expect(holdButton).toBeInTheDocument();
-    expect(holdButton).toBeEnabled();
+    expect(screen.getByText("create_order")).toBeInTheDocument();
+    expect(screen.getByText("Scrape competitor pricing")).toBeInTheDocument();
+    expect(screen.getByText("1 GEN")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign and submit" })).toBeEnabled();
   });
 
-  it("renders developer fee profile source when suggestions match", async () => {
-    renderPanel(
-      undefined,
-      createMockKit({
-        suggestions: true,
-        delays: { estimate: 0, submit: 0, step: 0 },
-      }),
-    );
+  it("submits with the attached value and reports success", async () => {
+    mocks.submitWrite.mockResolvedValue({ phase: "decided", successful: true, hash: "0xabc" });
+    const onDone = vi.fn();
+    render(<TransactionPanel tx={tx} account={account} userValue={5n} network="Studionet" onDone={onDone} />);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Sized from the developer’s measured fee profile/),
-      ).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign and submit" }));
+
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ successful: true })));
+    expect(mocks.submitWrite).toHaveBeenCalledWith(tx, account, 5n, expect.any(Function));
+    expect(screen.getByText(/Accepted by consensus/)).toBeInTheDocument();
   });
 
-  it("approving drives the flow to done", async () => {
-    const onDone = vi.fn<(status: TrackedStatus) => void>();
-    renderPanel(onDone);
+  it("shows the error and lets the person retry after a failure", async () => {
+    mocks.submitWrite.mockResolvedValue({ phase: "failed", successful: false, error: "You rejected the request in your wallet." });
+    render(<TransactionPanel tx={tx} account={account} network="Studionet" />);
 
-    const holdButton = await waitFor(() => {
-      const button = document.querySelector<HTMLButtonElement>("button.gltk-hold");
-      if (!button) {
-        throw new Error("Hold to sign button was not rendered");
-      }
-      expect(button).toBeEnabled();
-      return button;
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign and submit" }));
 
-    fireEvent.click(holdButton);
-
-    await waitFor(
-      () => {
-        expect(onDone).toHaveBeenCalledWith(
-          expect.objectContaining({ phase: "decided" }),
-        );
-      },
-      { timeout: 3000 },
-    );
+    expect(await screen.findByRole("alert")).toHaveTextContent("rejected");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
   });
 });

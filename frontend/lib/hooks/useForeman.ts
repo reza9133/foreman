@@ -1,12 +1,20 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import Foreman from "../contracts/Foreman";
 import { getContractAddress } from "../genlayer/client";
 import { useWallet } from "../genlayer/wallet";
 import { configError } from "../utils/toast";
-import type { Order, ProviderReputation } from "../contracts/types";
+import {
+  EMPTY_REPUTATION,
+  EMPTY_STATS,
+  type Order,
+  type OrdersPage,
+  type ProtocolStats,
+  type ProviderReputation,
+  type TopProvider,
+} from "../contracts/types";
 
 /**
  * Hook to get the Foreman contract instance. Returns null if the contract
@@ -98,9 +106,58 @@ export function useProviderReputation(address: string | null) {
     queryFn: () =>
       contract
         ? contract.getProviderReputation(address)
-        : Promise.resolve({ completed: 0, rejected: 0, disputed: 0, total_earned_wei: "0" }),
+        : Promise.resolve({ ...EMPTY_REPUTATION }),
     enabled: !!contract,
     staleTime: 2000,
+  });
+}
+
+/**
+ * Paginated, newest-first orders with an optional status filter. The contract
+ * does the slicing, so a page costs the same however large the order book
+ * grows; `keepPreviousData` keeps the old page on screen while the next one
+ * loads instead of flashing a spinner.
+ */
+export function useOrdersPage(page: number, pageSize: number, status = "") {
+  const contract = useForemanContract();
+
+  return useQuery<OrdersPage, Error>({
+    queryKey: ["orders", "page", status, page, pageSize],
+    queryFn: () =>
+      contract
+        ? contract.getOrdersPage(page * pageSize, pageSize, status)
+        : Promise.resolve({ orders: [], total_matching: 0, total: 0 }),
+    placeholderData: keepPreviousData,
+    staleTime: 4000,
+    enabled: !!contract,
+  });
+}
+
+/** Protocol-wide counters (O(1) on-chain), shared by navbar, home and dashboard. */
+export function useProtocolStats() {
+  const contract = useForemanContract();
+
+  return useQuery<ProtocolStats, Error>({
+    queryKey: ["stats"],
+    queryFn: () => (contract ? contract.getStats() : Promise.resolve(EMPTY_STATS)),
+    staleTime: 8000,
+    refetchInterval: (query) =>
+      typeof document !== "undefined" && document.visibilityState === "visible" ? 20000 : false,
+    enabled: !!contract,
+    // a v1 deployment has no get_stats — degrade to zeros rather than erroring the whole UI
+    retry: false,
+  });
+}
+
+export function useTopProviders(limit = 25) {
+  const contract = useForemanContract();
+
+  return useQuery<TopProvider[], Error>({
+    queryKey: ["providers", "top", limit],
+    queryFn: () => (contract ? contract.getTopProviders(limit) : Promise.resolve([])),
+    staleTime: 8000,
+    enabled: !!contract,
+    retry: false,
   });
 }
 
@@ -110,5 +167,7 @@ export function useInvalidateOrdersData() {
   return useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["orders"] });
     queryClient.invalidateQueries({ queryKey: ["reputation"] });
+    queryClient.invalidateQueries({ queryKey: ["stats"] });
+    queryClient.invalidateQueries({ queryKey: ["providers"] });
   }, [queryClient]);
 }

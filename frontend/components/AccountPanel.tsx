@@ -226,7 +226,7 @@ export function AccountPanel() {
             <User className="w-4 h-4 text-accent" />
             <AddressDisplay address={address} maxLength={12} />
           </div>
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-4 w-px bg-foreground/[0.06]" />
           <div className="flex items-center gap-1">
             <span className="text-sm font-semibold text-accent">{completed}</span>
             <span className="text-xs text-muted-foreground">delivered</span>
@@ -323,7 +323,7 @@ export function AccountPanel() {
             </Alert>
           )}
 
-          <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
+          <div className="mt-6 pt-4 border-t border-border/70 space-y-3">
             <Button
               onClick={handleSwitchAccount}
               variant="outline"

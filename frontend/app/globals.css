@@ -400,9 +400,7 @@ html {
     radial-gradient(ellipse 70% 50% at 10% 85%, oklch(0.55 0.37 265 / 0.08) 0%, transparent 55%),
     linear-gradient(180deg, #f1ede4 0%, #e9e4d8 50%, #ece7dc 100%);
   background-attachment: fixed !important;
-  background-size: 200% 200% !important;
   background-repeat: no-repeat !important;
-  animation: brandGradientShift 20s ease infinite;
   overscroll-behavior: none;
 }
 
@@ -541,4 +539,226 @@ wui-list-item[data-icon="onramp"] {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* v2: motion, depth and data-visual primitives                        */
+/* ------------------------------------------------------------------ */
+
+/* The page gradient used to animate forever on <html>, forcing a repaint of
+   the full-viewport fixed background every frame. It is static now. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scroll-reveal: elements start hidden/offset and settle when in view. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 3D tilt card — transform set from JS via CSS variables. */
+.tilt-scene {
+  perspective: 900px;
+}
+.tilt-card {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateZ(0);
+  transition: transform 0.18s ease-out, box-shadow 0.3s ease;
+}
+.tilt-card:hover {
+  box-shadow: 0 24px 48px -24px oklch(0.4 0.1 70 / 0.35);
+}
+.tilt-card > .tilt-lift {
+  transform: translateZ(28px);
+}
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    240px circle at var(--glare-x, 50%) var(--glare-y, 0%),
+    oklch(1 0 0 / 0.55),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.tilt-card:hover .tilt-glare {
+  opacity: 1;
+}
+
+/* Skeleton shimmer for loading states. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: oklch(0.86 0.014 80);
+  border-radius: 0.5rem;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.55), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Vertical timeline rail. */
+.timeline-rail {
+  position: relative;
+}
+.timeline-rail::before {
+  content: "";
+  position: absolute;
+  left: 0.6875rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), oklch(0.65 0.22 80 / 0.1));
+}
+
+/* Status chips with enough contrast on the warm light theme. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.chip-ok {
+  color: oklch(0.42 0.12 160);
+  background: oklch(0.72 0.15 160 / 0.16);
+  border-color: oklch(0.55 0.13 160 / 0.35);
+}
+.chip-bad {
+  color: oklch(0.45 0.18 20);
+  background: oklch(0.65 0.2 20 / 0.14);
+  border-color: oklch(0.55 0.18 20 / 0.35);
+}
+.chip-warn {
+  color: oklch(0.45 0.12 70);
+  background: oklch(0.8 0.15 80 / 0.2);
+  border-color: oklch(0.6 0.14 75 / 0.4);
+}
+.chip-info {
+  color: oklch(0.42 0.12 235);
+  background: oklch(0.7 0.12 235 / 0.15);
+  border-color: oklch(0.55 0.12 235 / 0.35);
+}
+.chip-mute {
+  color: oklch(0.42 0.02 80);
+  background: oklch(0.5 0.02 80 / 0.1);
+  border-color: oklch(0.5 0.02 80 / 0.25);
+}
+
+/* Hero 3D canvas container: fades in once the WebGL scene has mounted. */
+.scene-canvas {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+.scene-canvas.is-ready {
+  opacity: 1;
+}
+
+/* Docs prose. */
+.prose-docs h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2.5rem 0 0.75rem;
+  scroll-margin-top: 6rem;
+}
+.prose-docs h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.5rem;
+  scroll-margin-top: 6rem;
+}
+.prose-docs p,
+.prose-docs li {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+.prose-docs ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0 1rem;
+}
+.prose-docs code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: oklch(0.5 0.02 80 / 0.12);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+}
+.prose-docs pre {
+  background: oklch(0.2 0.02 80);
+  color: oklch(0.95 0.01 80);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  margin: 1rem 0 1.5rem;
+}
+.prose-docs pre code {
+  background: none;
+  padding: 0;
+}
+.prose-docs table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 1rem 0 1.5rem;
+}
+.prose-docs th,
+.prose-docs td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.prose-docs th {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+@keyframes dashFlow {
+  to {
+    stroke-dashoffset: -24;
+  }
 }

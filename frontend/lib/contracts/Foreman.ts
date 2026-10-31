@@ -1,12 +1,18 @@
 import { createClient } from "genlayer-js";
 import { GENLAYER_CHAIN } from "../genlayer/client";
-import type { Order, ProviderReputation } from "./types";
+import {
+  EMPTY_REPUTATION,
+  type Order,
+  type OrdersPage,
+  type ProtocolStats,
+  type ProviderReputation,
+  type TopProvider,
+} from "./types";
 
 /**
  * Foreman contract class for interacting with the GenLayer Foreman
- * work-order escrow contract. Read-only — all state-changing calls go
- * through Transaction Kit's <GenLayerTransactionPanel /> so the wallet can
- * show the person exactly what they're signing.
+ * work-order escrow contract. Read-only; all state-changing calls go
+ * through <TransactionPanel /> so the person sees exactly what they are signing.
  */
 class Foreman {
   private contractAddress: `0x${string}`;
@@ -74,9 +80,28 @@ class Foreman {
 
   async getProviderReputation(address: string | null): Promise<ProviderReputation> {
     if (!address) {
-      return { completed: 0, rejected: 0, disputed: 0, total_earned_wei: "0" };
+      return { ...EMPTY_REPUTATION };
     }
     return this.read<ProviderReputation>("get_provider_reputation", [address]);
+  }
+
+  /** Newest-first page of orders; `status` "" means every status. (v2) */
+  async getOrdersPage(offset: number, limit: number, status = ""): Promise<OrdersPage> {
+    return this.read<OrdersPage>("get_orders_page", [offset, limit, status]);
+  }
+
+  /** O(1) protocol counters. (v2) */
+  async getStats(): Promise<ProtocolStats> {
+    return this.read<ProtocolStats>("get_stats");
+  }
+
+  /** Providers ranked on-chain by completions then earnings. (v2) */
+  async getTopProviders(limit = 25): Promise<TopProvider[]> {
+    return this.read<TopProvider[]>("get_top_providers", [limit]);
+  }
+
+  async canAppeal(orderId: number): Promise<boolean> {
+    return this.read<boolean>("can_appeal", [orderId]);
   }
 
   async isExpired(orderId: number): Promise<boolean> {

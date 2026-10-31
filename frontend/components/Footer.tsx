@@ -60,14 +60,18 @@ export function Footer() {
                   @amirhp771
                 </a>
               </li>
-              <li>
-                <Link
-                  href="/how-it-works"
-                  className="text-muted-foreground hover:text-accent transition-colors"
-                >
-                  How it works
-                </Link>
-              </li>
+              {[
+                ["/how-it-works", "How it works"],
+                ["/docs", "Documentation"],
+                ["/lifecycle", "Interactive lifecycle"],
+                ["/dashboard", "Protocol dashboard"],
+              ].map(([href, label]) => (
+                <li key={href}>
+                  <Link href={href} className="text-muted-foreground hover:text-accent transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

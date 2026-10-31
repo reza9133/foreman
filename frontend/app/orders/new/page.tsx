@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { SubmitInput, TrackedStatus } from "@genlayer/transaction-kit-react";
+import type { TxOutcome, TxRequest } from "@/lib/genlayer/transactions";
 import { Navbar } from "@/components/Navbar";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { useWallet } from "@/lib/genlayer/wallet";
 import { useInvalidateOrdersData } from "@/lib/hooks/useForeman";
 import { parseGen } from "@/lib/utils/gen";
 import { error, success } from "@/lib/utils/toast";
+
+/** Mirrors MIN_ESCROW_WEI in the contract (0.001 GEN). */
+const MIN_ESCROW_WEI = 10n ** 15n;
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -31,10 +34,15 @@ export default function NewOrderPage() {
     title.trim().length > 0 &&
     spec.trim().length > 0 &&
     criteria.trim().length > 0 &&
-    Number(deadlineDays) > 0 &&
-    parseGen(escrow) > 0n;
+    title.trim().length <= 120 &&
+    spec.trim().length <= 4000 &&
+    criteria.trim().length <= 2000 &&
+    Number.isInteger(Number(deadlineDays)) &&
+    Number(deadlineDays) >= 1 &&
+    Number(deadlineDays) <= 365 &&
+    parseGen(escrow) >= MIN_ESCROW_WEI;
 
-  const tx = useMemo<SubmitInput | null>(
+  const tx = useMemo<TxRequest | null>(
     () =>
       reviewing && contractAddress
         ? {
@@ -46,8 +54,8 @@ export default function NewOrderPage() {
         : null,
     [reviewing, contractAddress, title, spec, criteria, deadlineDays],
   );
-  // Transaction Kit prices and signs the attached GEN separately from the
-  // call itself — see TransactionDialog's `userValue` prop.
+  // The attached GEN is passed separately from the call itself — see
+  // TransactionDialog's `userValue` prop.
   const userValue = useMemo(() => parseGen(escrow), [escrow]);
 
   const handleReview = () => {
@@ -56,14 +64,16 @@ export default function NewOrderPage() {
       return;
     }
     if (!isValid) {
-      error("Fill in every field", { description: "Escrow must be greater than zero." });
+      error("Check the form", {
+        description: "All fields are required (title ≤ 120, spec ≤ 4000, criteria ≤ 2000 characters), the deadline is 1–365 days and escrow is at least 0.001 GEN.",
+      });
       return;
     }
     setReviewing(true);
   };
 
-  const handleDone = (status: TrackedStatus) => {
-    if (status.successful !== false) {
+  const handleDone = (outcome: TxOutcome) => {
+    if (outcome.successful) {
       invalidate();
       success("Work order opened", { description: "Your GEN is now held in escrow." });
       setReviewing(false);

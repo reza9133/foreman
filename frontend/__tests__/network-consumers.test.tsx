@@ -1,4 +1,3 @@
-import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GENLAYER_CHAIN,
@@ -8,16 +7,10 @@ import {
 
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(() => ({ readContract: vi.fn() })),
-  createTransactionKit: vi.fn(() => ({ configured: true })),
 }));
 
 vi.mock("genlayer-js", () => ({
   createClient: mocks.createClient,
-}));
-
-vi.mock("@genlayer/transaction-kit", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@genlayer/transaction-kit")>()),
-  createTransactionKit: mocks.createTransactionKit,
 }));
 
 import Foreman from "../lib/contracts/Foreman";
@@ -25,7 +18,6 @@ import {
   addGenLayerNetwork,
   switchToGenLayerNetwork,
 } from "../lib/genlayer/client";
-import { useTransactionKit } from "../lib/genlayer/kit";
 
 const account = "0x1234567890123456789012345678901234567890";
 const providerRequest = vi.fn();
@@ -33,7 +25,6 @@ const providerRequest = vi.fn();
 describe("network consumers", () => {
   beforeEach(() => {
     mocks.createClient.mockClear();
-    mocks.createTransactionKit.mockClear();
     providerRequest.mockReset();
     Object.defineProperty(window, "ethereum", {
       configurable: true,
@@ -58,29 +49,6 @@ describe("network consumers", () => {
       account: "0x0000000000000000000000000000000000000001",
       chain: GENLAYER_CHAIN,
     });
-  });
-
-  it("uses the same chain for Transaction Kit submissions", () => {
-    renderHook(() => useTransactionKit(account));
-
-    expect(mocks.createTransactionKit).toHaveBeenCalledWith({
-      account,
-      chain: GENLAYER_CHAIN,
-      provider: expect.objectContaining({ request: providerRequest }),
-    });
-  });
-
-  it("does not create a signing kit without an account", () => {
-    const { result } = renderHook(() => useTransactionKit(null));
-    expect(result.current).toBeNull();
-    expect(mocks.createTransactionKit).not.toHaveBeenCalled();
-  });
-
-  it("does not create a signing kit without a wallet provider", () => {
-    Object.defineProperty(window, "ethereum", { configurable: true, value: undefined });
-    const { result } = renderHook(() => useTransactionKit(account));
-    expect(result.current).toBeNull();
-    expect(mocks.createTransactionKit).not.toHaveBeenCalled();
   });
 
   it("uses the shared wallet network for add and switch requests", async () => {
