@@ -74,25 +74,29 @@ security notes (checks-effects-interactions ordering, prompt-injection
 mitigation in the adjudication prompt, and why the validator always
 re-derives its own verdict instead of trusting the leader's output).
 
-## What's included
+## What's included (v2)
 
-- **`contracts/foreman.py`** — the Intelligent Contract: order lifecycle,
-  escrow, atomic AI adjudication via a custom leader/validator Equivalence
-  Principle function, appeals, expiry, and on-chain provider reputation.
-- **Direct mode tests** (`tests/direct/test_foreman.py`, 30+ cases) — fast,
-  in-memory tests covering every state transition, access control, escrow
-  math, and — critically — that the validator function actually *disagrees*
-  when a second opinion falls outside tolerance (proof the consensus logic
-  isn't a rubber stamp).
-- **Integration tests** (`tests/integration/`) — full end-to-end runs
-  against a live network, targeting Studio Next by default.
-- **Contract linting** via `genvm-lint`.
-- A Next.js 16 frontend (TypeScript, TanStack Query, Radix UI,
-  `@genlayer/transaction-kit-react`) with a live order book, a create-order
-  flow, and a per-order action hub (claim / submit / appeal / expire) that
-  adapts to the connected wallet's role.
-- Deployment script and network config already pointed at **GenLayer Studio
-  Next** (Consensus v0.6, chain id `61997`), as required for this hackathon.
+- **`contracts/foreman.py` (v2.0.0)** — order lifecycle, escrow, atomic AI
+  adjudication via a custom leader/validator Equivalence Principle function,
+  appeals, expiry and on-chain provider reputation, now hardened: SSRF-safe
+  evidence URLs, content-hash prompt fences, input caps, minimum escrow,
+  deadline enforcement, a 7-day appeal window, an auditable per-order
+  timeline, a per-criterion checklist, and protocol-wide stats and ranking
+  views. See [`docs/CONTRACT.md`](docs/CONTRACT.md) and [`CHANGELOG.md`](CHANGELOG.md).
+- **211 direct tests**, including an adversarial suite (hostile URLs,
+  prompt injection, garbage model output, auth probing, rogue validators)
+  and a 12-seed fund-conservation fuzz. See [`docs/TESTING.md`](docs/TESTING.md).
+- **A one-command live end-to-end run** (`scripts/e2e_live.py`) that deploys
+  a fresh contract, drives nine lifecycle scenarios through real consensus
+  and writes a Markdown/JSON report you can commit. Runs in a GitHub
+  Codespace; see [`docs/E2E.md`](docs/E2E.md).
+- **A multi-page frontend** — dashboard, order book, order detail with
+  timeline and checklist, provider profiles, leaderboard, interactive
+  lifecycle explorer, and full in-app docs — with a lazy WebGL escrow
+  scene, CSS 3D tilt, animated SVG charts and `prefers-reduced-motion`
+  support. See [`docs/FRONTEND.md`](docs/FRONTEND.md).
+- **Contract linting** via `genvm-lint`, and CI in `.github/workflows/`.
+- Network config pointed at **GenLayer Studionet** (chain id `61999`).
 
 ## Requirements
 
@@ -130,24 +134,15 @@ and, using the `direct_vm.run_validator()` cheatcode, proves that a
 validator whose independent re-adjudication disagrees beyond tolerance
 actually returns `False` rather than rubber-stamping the leader.
 
-### 4. Deploy to Studio Next
+### 4. Deploy to Studionet
 
-The Agent Tank Hackathon requires deployment on **Studio Next** (Consensus
-v0.6, including fees; chain id `61997`, RPC
-`https://studio-next.genlayer.com/api`). If the CLI does not yet list
-`studio-next` as a built-in network, pick "custom" and enter the RPC URL and
-chain id above:
+Foreman targets **Studionet** (the stable GenLayer Studio; chain id `61999`,
+RPC `https://studio.genlayer.com/api`). Select it in the CLI and deploy:
 
 ```shell
-genlayer network   # interactive — pick "custom" if Studio Next isn't listed
-                    # by name yet, and enter the RPC URL and chain id above
-genlayer deploy     # runs deploy/deployScript.ts
+genlayer network studionet   # or run `genlayer network` and pick studionet
+genlayer deploy              # runs deploy/deployScript.ts
 ```
-
-> `studio-dev.genlayer.com` was the previous RPC host for this hackathon and
-> is no longer the required target. Use `studio-next.genlayer.com/api`
-> everywhere a URL is asked for; the explorer for this chain is at
-> `https://explorer-studio-dev.genlayer.com/`.
 
 Save the printed contract address. See the
 [GenLayer CLI reference](https://docs.genlayer.com/api-references/genlayer-cli)
@@ -158,7 +153,7 @@ one-shot alternative that skips the deploy script.
 ### 5. Run integration tests (optional, targets a live network)
 
 ```shell
-gltest tests/integration/ -v -s --network studio_devnet
+gltest tests/integration/ -v -s --network studionet
 ```
 
 ### 6. Run the frontend
@@ -171,75 +166,63 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, connect a wallet on Studio Next, and open a
+Open http://localhost:3000, connect a wallet on Studionet, and open a
 work order — the app will prompt MetaMask to add/switch to the network
 automatically if it isn't already configured.
 
-### Fee profile (developer suggestions)
+### Network and SDK versions
 
-The frontend uses published `@genlayer/transaction-kit` and
-`@genlayer/transaction-kit-react` version `0.1.0-rc.2`, with `genlayer-js`
-`2.0.0-rc.1`. Run `npm ci` from the repository root to install the locked
-releases.
+The frontend uses the stable `genlayer-js` release (`1.1.8`), which matches
+Studionet. Run `npm ci` from the repository root to install the locked
+releases. Do not move to the `2.0.0-rc` line or its Transaction Kit: those
+target a different consensus deployment and cannot submit to Studionet.
 
-The default network is Studio Next (Consensus v0.6) at
-`https://studio-next.genlayer.com/api` (chain ID `61997`). The installed SDK's
-`studioDevnet` preset still points at the older Studio Dev host, so
-`frontend/lib/genlayer/network.ts` overrides just the RPC URL and chain name
-while keeping the rest of that preset. Copy `frontend/.env.example`; change
-the RPC URL and chain ID together when targeting another deployment. Wallet,
-SDK, and Transaction Kit share this configuration.
+The default network is Studionet at `https://studio.genlayer.com/api` (chain
+ID `61999`). `frontend/lib/genlayer/network.ts` builds one chain object from the
+SDK's `studionet` preset. Copy `frontend/.env.example`; change the RPC URL and
+chain ID together when targeting another deployment. The wallet and
+`genlayer-js` share this configuration.
 
-Transaction Kit falls back to live network fee defaults when no developer
-profile is supplied, which is what this repo ships with. If you want faster,
-tighter fee quotes in the UI, measure a profile for `contracts/foreman.py`'s
-`deploy` and `create_order` calls against your deployment and pass it as
-`suggestions` to `createTransactionKit` in `frontend/lib/genlayer/kit.ts` —
-see `genlayer-test`'s `--fee-profile` tooling.
+Writes go through `frontend/components/TransactionPanel.tsx`: it shows the
+call, arguments and attached GEN, asks the wallet to sign, then waits until
+Studionet consensus has accepted the transaction and checks that the contract
+did not revert.
 
 ## Project structure
 
 ```
-contracts/
-  foreman.py              # the Intelligent Contract
+contracts/foreman.py          # the Intelligent Contract (v2.0.0)
 tests/
-  direct/
-    conftest.py            # shared JSON-mock helper
-    test_foreman.py        # 30+ in-memory tests, no network required
+  direct/                     # in-memory tests: core, v2, adversarial, docs consistency
   integration/
-    test_foreman.py        # full lifecycle against a live network
-frontend/                  # Next.js 16 app (TypeScript, TanStack Query, Radix UI)
-  app/
-    page.tsx                # landing page
-    orders/page.tsx         # browse (open / mine / all)
-    orders/new/page.tsx     # create a work order (escrow flow)
-    orders/[id]/page.tsx    # order detail + all lifecycle actions
-    how-it-works/page.tsx
-  components/               # OrderCard, StatusBadge, TransactionDialog, Navbar, …
-  lib/
-    contracts/Foreman.ts    # read wrapper
-    hooks/useForeman.ts     # TanStack Query hooks
-    genlayer/                # wallet, network, transaction-kit wiring (Studio Next by default)
-deploy/
-  deployScript.ts           # deploys contracts/foreman.py
-docs/
-  AGENT_TANK_SUBMISSION.md  # hackathon-track fit & review checklist, spelled out
-gltest.config.yaml          # network config — defaults to studio_devnet
-pyproject.toml
-.github/workflows/          # CI: lint + direct tests
+    test_foreman.py           # basic lifecycle against a live network
+    test_e2e_live.py          # nine-scenario live E2E that writes a report
+    e2e_support.py            # report builder
+e2e/fixtures/                 # evidence files the live run points the contract at
+scripts/
+  e2e_live.py                 # live E2E runner (Studionet by default)
+reports/                      # E2E reports (commit these)
+frontend/                     # Next.js 16 static app
+  app/                        # pages: / /dashboard /orders /orders/new /orders/detail
+                              #        /providers/detail /leaderboard /lifecycle /docs
+  components/                 # charts, scene (WebGL), timeline, checklist, tilt, ...
+  lib/                        # contract client, hooks, lifecycle + docs data, utils
+docs/                         # CONTRACT, FRONTEND, TESTING, E2E, MILESTONE_V2
+.devcontainer/                # Codespaces setup
+.github/workflows/            # CI and the manual live-E2E workflow
 ```
 
 ## Testing strategy
 
-| Test Type | Command | Speed | Requires a network |
-|-----------|---------|-------|---------------------|
-| **Lint** | `genvm-lint check contracts/foreman.py` | ~250ms | No |
-| **Direct** | `pytest tests/direct/ -v` | ~ms/test | No |
-| **Integration** | `gltest tests/integration/ -v -s --network studio_devnet` | ~min/test | Yes |
+| Test type | Command | Speed | Network |
+|-----------|---------|-------|---------|
+| Lint | `genvm-lint check contracts/foreman.py` | ~250 ms | No |
+| Direct (211) | `pytest tests/direct/ -v` | ~2 min | No |
+| Frontend (43) | `cd frontend && npm test` | seconds | No |
+| Live E2E | `python scripts/e2e_live.py` | minutes | Studionet |
 
-**Recommended workflow:** lint after every contract change, run direct
-tests constantly during development, run integration tests before (and
-after) deploying to confirm real consensus behavior on Studio Next.
+The live run is the only one that exercises real validators and a real LLM, so
+the report you commit as evidence should come from it.
 
 ## Community
 

@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import {
   TransactionHash,
+  TransactionStatus,
   GenLayerClient,
   DecodedDeployData,
 } from "genlayer-js/types";
@@ -25,8 +26,6 @@ export default async function main(client: GenLayerClient<any>) {
   try {
     const contractCode = new Uint8Array(readFileSync(filePath));
 
-    await client.initializeConsensusSmartContract();
-
     const deployTransaction = await client.deployContract({
       code: contractCode,
       args: [],
@@ -34,7 +33,8 @@ export default async function main(client: GenLayerClient<any>) {
 
     const receipt = await client.waitForTransactionReceipt({
       hash: deployTransaction as TransactionHash,
-      waitUntil: "decided",
+      status: TransactionStatus.ACCEPTED,
+      interval: 3000,
       retries: 200,
     });
 
@@ -42,11 +42,10 @@ export default async function main(client: GenLayerClient<any>) {
       throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
     }
 
-    // Studio-family backends (localnet, Studionet, Studio Dev) report the new
-    // address on `receipt.data.contract_address`; network backends report it on
-    // the decoded deploy calldata. Read whichever is present instead of
-    // branching on chain id — the old `id === localnet.id` check sent every
-    // Studio deployment down the network branch and lost the address.
+    // Studio backends (localnet, Studionet) report the new address on
+    // `receipt.data.contract_address`; other networks report it on the decoded
+    // deploy calldata. Read whichever is present instead of branching on chain
+    // id.
     const deployedContractAddress =
       receipt.data?.contract_address ??
       (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;

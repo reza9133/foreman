@@ -1,0 +1,32 @@
+[
+  {
+    "sku": "SKU-001",
+    "price": 13.49,
+    "currency": "USD"
+  },
+  {
+    "sku": "SKU-002",
+    "price": 16.99,
+    "currency": "USD"
+  },
+  {
+    "sku": "SKU-003",
+    "price": 20.49,
+    "currency": "USD"
+  },
+  {
+    "sku": "SKU-004",
+    "price": 23.99,
+    "currency": "USD"
+  },
+  {
+    "sku": "SKU-005",
+    "price": 27.49,
+    "currency": "USD"
+  },
+  {
+    "sku": "SKU-006",
+    "price": 30.99,
+    "currency": "USD"
+  }
+]

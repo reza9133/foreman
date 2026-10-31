@@ -10,10 +10,10 @@ genvm-lint check contracts/foreman.py           # Lint a contract
 
 # Testing
 pytest tests/direct/ -v                        # Direct mode tests (fast, no Studio)
-gltest tests/integration/ -v -s                # Integration tests (studio_devnet by default)
+gltest tests/integration/ -v -s                # Integration tests (studionet by default)
 
 # Deployment
-genlayer network                               # pick "custom" -> Studio Next, Consensus v0.6, chain 61997
+genlayer network                               # pick studionet (chain 61999)
 genlayer deploy                                # Deploy contracts
 
 # Frontend
@@ -33,22 +33,20 @@ deploy/             # TypeScript deployment scripts
 
 **Frontend stack**: Next.js 16, React 19, TypeScript, Tailwind CSS v4
 (CSS-first — the theme lives in `app/globals.css`, there is no
-`tailwind.config.ts`), TanStack Query, `genlayer-js` + `@genlayer/transaction-kit`,
+`tailwind.config.ts`), TanStack Query, `genlayer-js` (stable 1.1.8),
 and direct MetaMask (EIP-1193) wiring in `lib/genlayer/client.ts`.
 
-**Network**: Studio Next (Consensus v0.6, including fees), chain id `61997`,
-RPC `https://studio-next.genlayer.com/api`. `lib/genlayer/network.ts`
-overrides genlayer-js's `studioDevnet` preset (which still points at the
-older `studio-dev.genlayer.com` host) with this RPC URL; `gltest` reads its
-own value from `gltest.config.yaml`. Explorer:
-`https://explorer-studio-dev.genlayer.com/`.
+**Network**: Studionet (the stable GenLayer Studio), chain id `61999`,
+RPC `https://studio.genlayer.com/api`. `lib/genlayer/network.ts` builds the
+shared chain object from genlayer-js's `studionet` preset; `gltest` reads its
+own value from `gltest.config.yaml`.
 
 ## Development Workflow
 
 1. Write/modify contract in `contracts/`
 2. Lint: `genvm-lint check contracts/your_contract.py`
 3. Test direct: `pytest tests/direct/ -v`
-4. Deploy: `genlayer network` (pick/enter Studio Next) `&& genlayer deploy`
+4. Deploy: `genlayer network` (pick studionet) `&& genlayer deploy`
 5. Test integration: `gltest tests/integration/ -v -s`
 6. Run frontend: `cd frontend && npm run dev`
 

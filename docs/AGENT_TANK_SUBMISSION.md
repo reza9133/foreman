@@ -56,8 +56,7 @@ submitting. Here's where each is answered in this repo:
 - **Does my app actually call a real GenLayer contract?**
   Yes — every write in the frontend (`create_order`, `claim_order`,
   `cancel_order`, `submit_deliverable`, `appeal_delivery`, `expire_order`)
-  goes through `@genlayer/transaction-kit-react`'s
-  `<GenLayerTransactionPanel>` against the deployed contract address in
+  goes through the in-app `<TransactionPanel>` (built on `genlayer-js`) against the deployed contract address in
   `NEXT_PUBLIC_CONTRACT_ADDRESS`. No mocked backend, no simulated state.
 
 - **Why does decentralized judgment matter to this problem?**
@@ -87,7 +86,7 @@ submitting. Here's where each is answered in this repo:
 
 - **What have I built beyond the starter or boilerplate?**
   Starting point was `genlayer-project-boilerplate`'s `v2-dev` branch
-  (Transaction Kit RC2 wiring, Studio Next network config). Everything
+  (network config). Everything
   domain-specific is new: the entire contract, its full test suite, the
   order-book frontend (landing page, browse/filter, create-order escrow
   flow, per-order action hub with role-aware actions, how-it-works page),
@@ -98,12 +97,11 @@ submitting. Here's where each is answered in this repo:
 - **Can someone use the frontend and follow clear instructions to verify
   the result?**
   Yes — root README "Quick start" walks from a clean checkout to a running
-  app against Studio Next; the in-app **How it works** page explains the
+  app against Studionet; the in-app **How it works** page explains the
   same flow for a non-technical reviewer without needing to read the repo.
-  The currently deployed contract
-  (`0xa30086E09B2B47645167182653ec55702e57B20b`) can also be inspected
-  directly on the explorer, without running anything locally:
-  https://explorer-studio-dev.genlayer.com/address/0xa30086E09B2B47645167182653ec55702e57B20b
+  After deploying v2 to Studionet, the contract can also be inspected on the
+  explorer (https://genlayer-explorer.vercel.app) without running anything
+  locally — add the new contract address here once it is deployed.
 
 ## Security notes
 

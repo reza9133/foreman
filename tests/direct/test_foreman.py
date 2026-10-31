@@ -321,7 +321,8 @@ def test_expire_claimed_order_penalizes_provider_reputation(
     assert order["status"] == "expired"
 
     rep = contract.get_provider_reputation(to_hex(direct_bob))
-    assert rep["rejected"] == 1
+    assert rep["abandoned"] == 1
+    assert rep["rejected"] == 0
 
 
 def test_cannot_expire_before_deadline(direct_vm, direct_deploy, direct_alice):
@@ -565,5 +566,7 @@ def test_provider_reputation_defaults_to_zero(direct_vm, direct_deploy, direct_b
         "completed": 0,
         "rejected": 0,
         "disputed": 0,
+        "abandoned": 0,
         "total_earned_wei": "0",
+        "reliability_bps": 0,
     }
